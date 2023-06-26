@@ -11,39 +11,12 @@ class BaseModel(models.Model):
     created_at = models.DateTimeField('Создано', auto_now_add=True)
     created_by = models.ForeignKey(
         User, on_delete=models.CASCADE,
-        related_name='created_by',
         verbose_name='Автор записи')
     is_published = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
 
-
-class Orders(BaseModel):
-    number = models.IntegerField('Номер закупки',  default=0)
-    order_date = models.DateTimeField('Дата закупки', null=True, blank=True)
-    quantity = models.IntegerField('Количество единиц товаров',  default=1)
-    cost_price_RUB = models.DecimalField(
-        'Себестоимость в руб.', max_digits=9, decimal_places=2,
-        null=True, blank=True)
-    comment = models.CharField('Комментарий', max_length=256)
-
-    def save(self, *args, **kwargs):
-        if not self.number:
-            last_number = Orders.objects.aggregate(
-                Max('number'))['number__max']
-            self.number = (last_number or 0) + 1
-        super().save(*args, **kwargs)
-
-    class Meta:
-        verbose_name = 'Заказ'
-        verbose_name_plural = 'Заказы'
-
-    def __str__(self):
-        return self.title
-
-
-"""
 class Catalog(BaseModel):
     title = models.CharField('Название', max_length=256)
 
@@ -55,6 +28,28 @@ class Catalog(BaseModel):
         return self.title
 
 
+class Orders(BaseModel):
+    number = models.IntegerField('Номер закупки',  default=0)
+    comment = models.CharField('Комментарий', max_length=256)
+    order_date = models.DateTimeField('Дата закупки', null=True, blank=True)
+    quantity = models.IntegerField('Количество единиц товаров',  default=1)
+    cost_price_RUB = models.DecimalField(
+        'Себестоимость в руб. (Например, 25123.13)', max_digits=9, decimal_places=2,
+        null=True, blank=True)
+    product = models.ForeignKey(
+        Catalog,
+        on_delete=models.CASCADE,
+        related_name='orders',
+        verbose_name='Продукт')
+
+    class Meta:
+        verbose_name = 'Заказ'
+        verbose_name_plural = 'Заказы'
+
+    def __str__(self):
+        return self.title
+
+"""
 class Payment_type(BaseModel):
     title = models.CharField('Способ оплаты', max_length=256)
 

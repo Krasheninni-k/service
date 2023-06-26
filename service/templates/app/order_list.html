@@ -16,17 +16,17 @@
               <th>Дата заказа</th>
               <th>Количество</th>
               <th>Комментарий</th>
+              <th>Себестоимость ед.</th>
             </tr>
           </thead>
-          <tbody>
-            <!--
+          <tbody> 
             {% for order in order_list %}
               <tr>
                 <td>{{ order.number }}</td>
-                <td>{{ order.date_of_order }}</td>
+                <td>{{ order.order_date|date:"d-m-Y" }}</td>
                 <td>{{ order.quantity }}</td>
-                <td>{{ order.comment }}</td>
-                -->
+                <td>{{ order.product }}</td>
+                <td>{{ order.cost_price_RUB }}</td>
               </tr>
             {% endfor %}
           </tbody>

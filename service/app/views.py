@@ -21,27 +21,33 @@ def index(request):
 
 @login_required
 def add_order_detail(request):
+    number = int(request.GET.get('number'))
     quantity_name = int(request.GET.get('quantity'))
     order_date_str = request.GET.get('order_date')
     order_date = datetime.strptime(order_date_str, '%Y-%m-%d').date()
     template = 'app/add_order_detail.html'
-    orders = []
     forms = []
     
-    for i in range(quantity_name):
-        form = OrderDetailForm()
-        forms.append(form)
+    if request.method == 'POST':
+        for i in range(quantity_name):
+            form = OrderDetailForm(request.POST, prefix=f'form_{i+1}')
+            forms.append(form)
+        if all(form.is_valid() for form in forms):
+            for form in forms:
+                order = form.save(commit=False)
+                order.created_by = request.user
+                order.order_date = order_date
+                order.number = number
+                order.save()
+            return redirect('app:order_list')
+    else:
+        for i in range(quantity_name):
+            form = OrderDetailForm(prefix=f'form_{i+1}')
+            forms.append(form)
+    
     context = {'forms': forms}
-    for i in range(quantity_name):
-        if form.is_valid():
-            order = Orders.objects.create(
-                created_by=request.user,
-                order_date=order_date,
-                quantity=form.cleaned_data['quantity'],
-                cost_price_RUB=form.cleaned_data['cost_price_RUB']
-            )
-            orders.append(order)
     return render(request, template, context)
+
 
 @login_required
 def add_order(request):
@@ -51,8 +57,9 @@ def add_order(request):
     if form.is_valid():
         quantity = form.cleaned_data['quantity']
         order_date = form.cleaned_data['order_date']
-        request = request
-        redirect_url = reverse('app:add_order_detail') + f'?quantity={quantity}&order_date={order_date}'
+        number = form.cleaned_data['number']
+        redirect_url = reverse(
+            'app:add_order_detail') + f'?quantity={quantity}&order_date={order_date}&number={number}'
         return HttpResponseRedirect(redirect_url)
     return render(request, template, context)
 

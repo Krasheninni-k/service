@@ -3,6 +3,10 @@ from django import forms
 from .models import Orders
 
 class OrderForm(forms.Form):
+    number = forms.IntegerField(
+        label="Номер закупки",
+        help_text='Укажите номер закупки'
+    )
     order_date = forms.DateField(
         label='Дата закупки',
         help_text='Укажите дату'
@@ -15,10 +19,10 @@ class OrderDetailForm(forms.ModelForm):
 
     class Meta:
         model = Orders
-        fields = ('quantity', 'cost_price_RUB',)
+        fields = ('product', 'quantity', 'cost_price_RUB',)
         widgets = {
-            'date_of_order': forms.DateInput(attrs={'type': 'date'}),
-            'comment': forms.Textarea({'cols': '2', 'rows': '1'})
+            'quantity': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
+            'cost_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})
         }
 
 """

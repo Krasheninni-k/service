@@ -1,7 +1,17 @@
 from django.contrib import admin
 
-from .models import Orders
+from .models import Orders, Catalog
 
+
+@admin.register(Catalog)
+class CatalogAdmin(admin.ModelAdmin):
+    list_display = (
+        'created_by',
+        'title',
+    )
+    list_editable = (
+        'title',
+    )
 
 @admin.register(Orders)
 class OrdersAdmin(admin.ModelAdmin):

@@ -27,7 +27,7 @@
           {% if not '/delete/' in request.path %}
 
           {% for form in forms %}
-            {{ form }}
+          {% bootstrap_form form %}
             <br>
           {% endfor %}
           {% else %}
