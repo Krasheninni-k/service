@@ -2,10 +2,10 @@
 <header>
   <nav class="navbar navbar-light" style="background-color: lightskyblue">
     <div class="container">
-      <a class="navbar-brand" href="{% url 'blog:index' %}">
+      <a class="navbar-brand" href="{% url 'app:index' %}">
         <img src="{% static 'img/logo.png' %}" width="30" height="30" class="d-inline-block align-top" alt="">
-        Блогикум
-      </a>
+        DJI Robots
+      </a
       {% with request.resolver_match.view_name as view_name %}
         <ul class="nav  nav-pills">
           <li class="nav-item">
@@ -21,9 +21,13 @@
           {% if user.is_authenticated %}
             <div class="btn-group" role="group" aria-label="Basic outlined example">
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
-                  href="{% url 'blog:create_post' %}">Написать пост</a></button>
+                href="{% url 'app:order_list' %}">Закупки</a></button>
+                
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
-                  href="{% url 'blog:profile' user.username %}">{{ user.username }}</a></button>
+                  href="{% url 'app:add_order' %}">Новая закупка</a></button>
+                  
+              <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
+                  href="{% url 'app:profile' user.username %}">{{ user.username }}</a></button>
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
                   href="{% url 'logout' %}">Выйти</a></button>
             </div>

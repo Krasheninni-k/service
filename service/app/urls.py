@@ -1,14 +1,23 @@
 from django.urls import path
 
-from blog import views
+from app import views
 
-app_name = 'blog'
+app_name = 'app'
 
 urlpatterns = [
-    path('', views.index,
+     path('', views.index,
          name='index'),
-    path('profile/<slug:username>/', views.UserDetailView.as_view(),
-         name='profile'),
+     path('app/add_order/', views.add_order,
+         name='add_order'),      
+     path('app/add_order/detail', views.add_order_detail,
+         name='add_order_detail'),    
+     path('app/orders/', views.order_list,
+         name='order_list'),       
+     path('profile/<slug:username>/', views.UserDetailView.as_view(),
+         name='profile'),]
+         
+
+"""
     path('profile/<slug:username>/edit_profile',
          views.UserUpdateView.as_view(), name='edit_profile'),
     path('posts/create/', views.PostCreateView.as_view(),
@@ -30,3 +39,4 @@ urlpatterns = [
     path('category/<slug:category_slug>/', views.category_posts,
          name='category_posts'),
 ]
+"""

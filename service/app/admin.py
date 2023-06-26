@@ -1,25 +1,24 @@
 from django.contrib import admin
 
-from .models import Post, Category, Location
+from .models import Orders
 
 
-@admin.register(Post)
-class PostAdmin(admin.ModelAdmin):
+@admin.register(Orders)
+class OrdersAdmin(admin.ModelAdmin):
     list_display = (
-        'title',
-        'text',
-        'pub_date',
-        'author',
-        'location',
-        'category',
-        'is_published',
-        'created_at'
+        'created_at',
+        'number',
+        'order_date',
+        'comment',
+        'created_by'
     )
     list_editable = (
-        'is_published',
+        'number',
+        'order_date',
+        'comment',
     )
 
-
+"""
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = (
@@ -44,3 +43,4 @@ class LocationAdmin(admin.ModelAdmin):
     list_editable = (
         'is_published',
     )
+"""

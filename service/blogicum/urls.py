@@ -17,12 +17,12 @@ urlpatterns = [
         success_url=reverse_lazy('pages:about'),),
         name='registration',
     ),
-    path('', include('blog.urls', namespace='blog')),
-    path('profile/<slug:username>/', include('blog.urls', namespace='blog')),
-    path('posts/', include('blog.urls', namespace='blog')),
+    path('', include('app.urls', namespace='app')),
+    path('profile/<slug:username>/', include('app.urls', namespace='app')),
+    path('app/', include('app.urls', namespace='app')),
     path('pages/', include('pages.urls', namespace='pages')),
-    path('category/<slug:category_slug>/', include('blog.urls',
-                                                   namespace='blog')),
+    path('category/<slug:category_slug>/', include('app.urls',
+                                                   namespace='app')),
 ]
 
 if settings.DEBUG:

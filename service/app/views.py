@@ -7,16 +7,85 @@ from django.views.generic import CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect
+from datetime import datetime
 
-from blog.models import Post, Category, Comment
-from blog.forms import PostForm, CommentForm
-
+from app.models import Orders
+from app.forms import OrderForm, OrderDetailForm
 current_time = timezone.now()
+User = get_user_model()
+
+def index(request):
+    template = 'app/index.html'
+    return render(request, template)
+
+@login_required
+def add_order_detail(request):
+    quantity_name = int(request.GET.get('quantity'))
+    order_date_str = request.GET.get('order_date')
+    order_date = datetime.strptime(order_date_str, '%Y-%m-%d').date()
+    template = 'app/add_order_detail.html'
+    orders = []
+    forms = []
+    
+    for i in range(quantity_name):
+        form = OrderDetailForm()
+        forms.append(form)
+    context = {'forms': forms}
+    for i in range(quantity_name):
+        if form.is_valid():
+            order = Orders.objects.create(
+                created_by=request.user,
+                order_date=order_date,
+                quantity=form.cleaned_data['quantity'],
+                cost_price_RUB=form.cleaned_data['cost_price_RUB']
+            )
+            orders.append(order)
+    return render(request, template, context)
+
+@login_required
+def add_order(request):
+    template = 'app/add_order.html'
+    form = OrderForm(request.POST or None)
+    context = {'form': form}
+    if form.is_valid():
+        quantity = form.cleaned_data['quantity']
+        order_date = form.cleaned_data['order_date']
+        request = request
+        redirect_url = reverse('app:add_order_detail') + f'?quantity={quantity}&order_date={order_date}'
+        return HttpResponseRedirect(redirect_url)
+    return render(request, template, context)
+
+
+@login_required
+def order_list(request):
+    template = 'app/order_list.html'
+    order_list = Orders.objects.select_related('created_by').filter(
+        is_published=True)[:10]
+    context = {'order_list': order_list}
+    return render(request, template, context)
+
+
+
+class UserDetailView(DetailView):
+    model = get_user_model()
+    template_name = 'app/profile.html'
+    slug_field = 'username'
+    slug_url_kwarg = 'username'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['profile'] = self.get_object()
+        context['username'] = self.request.user.username
+        return context
+
+"""
+
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
-    model = Post
-    form_class = PostForm
+    model = Orders
+    form_class = OrderForm
     template_name = 'blog/create.html'
 
     def get_success_url(self):
@@ -101,21 +170,6 @@ def get_paginated_page(request, queryset):
     return page_obj
 
 
-class UserDetailView(DetailView):
-    model = get_user_model()
-    template_name = 'blog/profile.html'
-    slug_field = 'username'
-    slug_url_kwarg = 'username'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['profile'] = self.get_object()
-        post_list = get_post_list(Post.objects.filter(
-            author=self.get_object()))
-        page_obj = get_paginated_page(self.request, post_list)
-        context['page_obj'] = page_obj
-        context['username'] = self.request.user.username
-        return context
 
 
 class UserUpdateView(UpdateView):
@@ -135,17 +189,6 @@ class UserUpdateView(UpdateView):
     def get_success_url(self):
         return reverse('blog:profile',
                        kwargs={'username': self.request.user.username})
-
-
-def index(request):
-    template = 'blog/index.html'
-    post_list = get_post_list(Post.objects.filter(
-        is_published=True,
-        category__is_published=True,
-        pub_date__date__lte=current_time))
-    page_obj = get_paginated_page(request, post_list)
-    context = {'page_obj': page_obj}
-    return render(request, template, context)
 
 
 def post_detail(request, pk):
@@ -191,3 +234,4 @@ def add_comment(request, pk):
         comment.post = post
         comment.save()
     return redirect('blog:post_detail', pk=pk)
+"""

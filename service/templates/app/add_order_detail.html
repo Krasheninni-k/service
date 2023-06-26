@@ -2,11 +2,11 @@
 {% load django_bootstrap5 %}
 {% block title %}
   {% if '/edit/' in request.path %}
-    Редактирование публикации
+    Редактирование закупки
   {% elif "/delete/" in request.path %}
-    Удаление публикации
+    Удаление закупки
   {% else %}
-    Добавление публикации
+    Добавление закупки
   {% endif %}
 {% endblock %}
 {% block content %}
@@ -14,18 +14,22 @@
     <div class="card" style="width: 40rem;">
       <div class="card-header">
         {% if '/edit/' in request.path %}
-          Редактирование публикации
+          Редактирование данных закупки
         {% elif '/delete/' in request.path %}
-          Удаление публикации
+          Удаление данных закупки
         {% else %}
-          Добавление публикации
+          Внесите информацию о новой закупке
         {% endif %}
       </div>
       <div class="card-body">
         <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
           {% if not '/delete/' in request.path %}
-            {% bootstrap_form form %}
+
+          {% for form in forms %}
+            {{ form }}
+            <br>
+          {% endfor %}
           {% else %}
             <article>
               {% if object.image %}

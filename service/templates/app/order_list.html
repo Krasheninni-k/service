@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}
+  Список закупок
+{% endblock %}
+{% block content %}
+  <div class="col d-flex justify-content-center">
+    <div class="card" style="width: 40rem;">
+      <div class="card-header">
+        Список закупок
+      </div>
+      <div class="card-body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Номер</th>
+              <th>Дата заказа</th>
+              <th>Количество</th>
+              <th>Комментарий</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!--
+            {% for order in order_list %}
+              <tr>
+                <td>{{ order.number }}</td>
+                <td>{{ order.date_of_order }}</td>
+                <td>{{ order.quantity }}</td>
+                <td>{{ order.comment }}</td>
+                -->
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
