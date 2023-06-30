@@ -74,6 +74,16 @@ class ReceivedForm(forms.ModelForm):
         fields = ('received_date',)
         widgets = {
             'received_date': forms.DateInput(attrs={'type': 'date'})}
+        
+
+class DeleteOrderForm(forms.ModelForm):
+
+    class Meta:
+        model = Orders
+        fields = ('order_number', 'order_date',)
+        widgets = {
+            'order_date': forms.DateInput(attrs={'format': '%d.%m.%Y'})}
+
 """
 
 class ReceivedForm(forms.Form):

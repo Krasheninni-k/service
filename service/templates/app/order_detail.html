@@ -5,8 +5,14 @@
 {% block content %}
 <div class="col d-flex justify-content-center">
   <div class="card" style="width: 40rem;">
-    <div class="card-header">
-      Закупка №{{ order_info.first.order_number_id__order_number }} от {{ order_info.first.order_date_id__order_date|date:"d E Y" }}:
+    <div class="card-header d-flex justify-content-between">
+      <span class="text-left">
+        Закупка № {{ order_info.first.order_number_id__order_number }} от {{ order_info.first.order_date_id__order_date|date:"d E Y" }}:
+      </span>
+      <span>
+        <a class="btn btn-sm text-muted" href="{% url 'app:edit_order' order_info.first.order_number_id__order_number %}" role="button">Редактировать</a>
+        <a class="btn btn-sm text-muted" href="{% url 'app:delete_order' order_info.first.order_number_id__order_number %}" role="button">Удалить закупку</a>
+      </span>
     </div>
     <div class="card-body">
       <table class="table">

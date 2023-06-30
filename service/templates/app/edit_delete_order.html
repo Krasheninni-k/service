@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+
+{% block title %}
+  {% if '/edit/' in request.path %}
+    Редактирование данных закупки
+  {% else %}
+    Удаление данных закупки
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="col d-flex justify-content-center">
+    <div class="card" style="width: 40rem;">
+      <div class="card-header">
+        {% if '/edit/' in request.path %}
+          Редактирование данных закупки
+        {% else %}
+          Удаление данных закупки
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {% if not '/delete/' in request.path %}
+            {% bootstrap_form form %}
+            {% bootstrap_button button_type="submit" content="Редактировать" %}
+          {% else %}
+            <article>
+              <p>Закупка № {{ form.instance.order_number }} от
+              {{ form.instance.order_date|date:"d-m-Y" }}</p>
+              <p>Состав закупки: {{ form.instance.product_list }}</p>
+            </article>
+          {% bootstrap_button button_type="submit" content="Удалить" %}
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -11,7 +11,7 @@ from django.http import HttpResponseRedirect
 from datetime import datetime
 
 from app.models import Orders, Goods, Catalog
-from app.forms import OrderForm, OrderDetailForm, SaleForm, SaleDetailForm, ReceivedForm
+from app.forms import OrderForm, OrderDetailForm, SaleForm, SaleDetailForm, ReceivedForm, DeleteOrderForm
 
 from app.utils import create_goods
 
@@ -108,6 +108,29 @@ def order_detail(request, pk):
     context = {'order_info': order_info}
     return render(request, template, context)
 
+@login_required
+def delete_order(request, pk):
+    template = 'app/edit_delete_order.html'
+    instance = get_object_or_404(Orders, order_number=pk)
+    form = DeleteOrderForm(instance=instance)
+    context = {'form': form}
+    if request.method == 'POST':
+        instance.delete()
+        return redirect('app:orders_list')
+    return render(request, template, context)
+
+@login_required
+def edit_order(request, pk):
+    template = 'app/edit_delete_order.html'
+    instance = get_object_or_404(Orders, order_number=pk)
+    form = DeleteOrderForm(instance=instance)
+    context = {'form': form}
+    if request.method == 'POST':
+        form = DeleteOrderForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            return redirect('app:orders_list')
+    return render(request, template, context)
 
 @login_required
 def received_order(request, pk):
