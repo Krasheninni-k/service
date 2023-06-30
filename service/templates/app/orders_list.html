@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}
+  Список закупок
+{% endblock %}
+{% block content %}
+<div class="col d-flex justify-content-center">
+  <div class="card" style="width: 60rem;">
+    <div class="card-header d-flex justify-content-between">
+      <span>Список закупок:</span>
+      <a class="btn btn-primary" href="{% url 'app:add_order' %}" role="button">Новая закупка</a>
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Номер</th>
+            <th style="width: 100px;">Оплачено</th>
+            <th>Количество</th>
+            <th>Состав закупки</th>
+            <th style="width: 100px;">Получено</th>
+          </tr>
+        </thead>
+        <tbody> 
+          {% for order in page_obj %}
+            <tr>
+              <td>{{ order.order_number }}</td>
+              <td>{{ order.order_date|date:"d-m-Y" }}</td>
+              <td>{{ order.quantity }}</td>
+              <td>{{ order.product_list }}</td>
+              <td>{% if  order.received_date %} {{ order.received_date|date:"d-m-Y" }} {% endif %}</td>
+              <td>{{ order.cost_price_RUB }}</td>
+              <td>
+                <a class="btn btn-sm text-muted" href="{% url 'app:order_detail' order.order_number %}" role="button">
+                  Детали
+                </a>
+                {% if not order.received_date %}
+                <a class="btn btn-sm text-muted" href="{% url 'app:order_received' order.order_number %}" role="button">
+                  Получено
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% include "includes/paginator.html" %}
+{% endblock %}

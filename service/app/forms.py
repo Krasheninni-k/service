@@ -1,87 +1,85 @@
 from django import forms
+from datetime import date
+import datetime
 
-from .models import Orders
+from .models import Orders, Goods, Payment_type, Catalog
+from .utils import max_value
+
 
 class OrderForm(forms.Form):
     number = forms.IntegerField(
         label="Номер закупки",
-        help_text='Укажите номер закупки'
-    )
+        initial=max_value() + 1,
+        help_text=f'Номер последней закупки - {max_value}'
+        )
     order_date = forms.DateField(
         label='Дата закупки',
-        help_text='Укажите дату'
-    )
+        initial=date.today(),
+        help_text=f'Сегодня - {date.today().strftime("%d %m")}'
+        )
     quantity = forms.IntegerField(
-        label='Количество', 
-        help_text='Укажите количество')
+        label='Количество наименований товара',
+        )
 
-class OrderDetailForm(forms.ModelForm):
 
-    class Meta:
-        model = Orders
-        fields = ('product', 'quantity', 'cost_price_RUB',)
-        widgets = {
-            'quantity': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
-            'cost_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})
-        }
-
-"""
 class OrderDetailForm(forms.Form):
-    product_name = forms.CharField(
-        label='Товар',
-        max_length=100,
-        help_text='Выберете товар'
+    product = forms.ModelChoiceField(
+        queryset=Catalog.objects.all(),
+        label="Продукт",
+        help_text='Выберете продукт'
         )
     quantity = forms.IntegerField(
-        label='Количество', 
-        help_text='Укажите количество')
-    cost = forms.DecimalField(
-        label='Себестоимость', 
-        max_digits=10, decimal_places=2,
-        help_text='Укажите себестоимость в руб.'
+        label='Количество единиц товаров',
+        help_text='Укажите количество товаров'
         )
-
-
-        
-
-class CommentForm(forms.ModelForm):
-
-    class Meta:
-        model = Comment
-        fields = ('text',)
-
-from django import forms
-from .models import Orders
+    cost_price_RUB = forms.DecimalField(
+        label='Себестоимость в руб. (Например, 25123.13)',
+        help_text='Укажите себестоимость товара в рублях',
+        max_digits=9, decimal_places=2)
 
 
 class SaleForm(forms.Form):
-    title = forms.CharField(
-        label='Товар',
-        max_length=100,
-        help_text='Выберете товар'
-    )
+    number = forms.IntegerField(
+        label="Номер продажи",
+        help_text='Укажите номер продажи'
+        )
+    sale_date = forms.DateField(
+        label='Дата продажи',
+        help_text='Укажите дату продажи'
+        )
     quantity = forms.IntegerField(
-        label='Количество',
-        min_value=1, max_value=100,
-        help_text='Введите количество товаров'
-    )
-    price = forms.DecimalField(
-        label='Цена продажи',
-        max_digits=8,
-        decimal_places=2,
-        help_text='Введите цену продажи'
-    )
-    client_type = forms.CharField(
-        label='Тип клиента',
-        help_text='Выберете тип клиента'
-    )
-    payment_type = forms.CharField(
+        label='Количество', 
+        help_text='Укажите количество наименований товара'
+        )
+    payment_type = forms.ModelChoiceField(
+        queryset=Payment_type.objects.all(),
         label='Способ оплаты',
-        help_text='Выберете способ оплаты'
-    )
-    receiving_type = forms.CharField(
-        label='Способ получения',
-        help_text='Выберете способ получения'
-    )
+        help_text='Выберите способ оплаты'
+        )
+    
 
+class SaleDetailForm(forms.ModelForm):
+
+    class Meta:
+        model = Goods
+        fields = ('product', 'selling_price_RUB',)
+        widgets = {
+            'selling_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
+
+
+class ReceivedForm(forms.ModelForm):
+
+    class Meta:
+        model = Orders
+        fields = ('received_date',)
+        widgets = {
+            'received_date': forms.DateInput(attrs={'type': 'date'})}
+"""
+
+class ReceivedForm(forms.Form):
+    received_date = forms.DateField(
+        label='Дата получения закупки',
+        initial=date.today(),
+        help_text=f'Сегодня - {date.today().strftime("%d %m")}'
+        )
 """

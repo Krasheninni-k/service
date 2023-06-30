@@ -20,23 +20,24 @@
           </li>
           {% if user.is_authenticated %}
             <div class="btn-group" role="group" aria-label="Basic outlined example">
+
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
-                href="{% url 'app:order_list' %}">Закупки</a></button>
-                
+                href="{% url 'app:orders_list' %}">Закупки</a></button>
+
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
-                  href="{% url 'app:add_order' %}">Новая закупка</a></button>
+                href="{% url 'app:sales_list' %}">Продажи</a></button>
+              <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
+                href="{% url 'app:add_sale' %}">Новая продажа</a></button>
                   
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
-                  href="{% url 'app:profile' user.username %}">{{ user.username }}</a></button>
+                href="{% url 'app:profile' user.username %}">{{ user.username }}</a></button>
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
-                  href="{% url 'logout' %}">Выйти</a></button>
+                href="{% url 'logout' %}">Выйти</a></button>
             </div>
           {% else %}
             <div class="btn-group" role="group" aria-label="Basic outlined example">
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
                   href="{% url 'login' %}">Войти</a></button>
-              <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
-                  href="{% url 'registration' %}">Регистрация</a></button>
             </div>
           {% endif %}
         </ul>

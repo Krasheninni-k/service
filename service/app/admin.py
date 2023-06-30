@@ -1,56 +1,11 @@
 from django.contrib import admin
 
-from .models import Orders, Catalog
+from .models import Orders, Catalog, Payment_type, Receiving_type, Client_type, Goods
 
 
-@admin.register(Catalog)
-class CatalogAdmin(admin.ModelAdmin):
-    list_display = (
-        'created_by',
-        'title',
-    )
-    list_editable = (
-        'title',
-    )
-
-@admin.register(Orders)
-class OrdersAdmin(admin.ModelAdmin):
-    list_display = (
-        'created_at',
-        'number',
-        'order_date',
-        'comment',
-        'created_by'
-    )
-    list_editable = (
-        'number',
-        'order_date',
-        'comment',
-    )
-
-"""
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = (
-        'title',
-        'description',
-        'slug',
-        'is_published',
-        'created_at'
-    )
-    list_editable = (
-        'is_published',
-    )
-
-
-@admin.register(Location)
-class LocationAdmin(admin.ModelAdmin):
-    list_display = (
-        'name',
-        'is_published',
-        'created_at'
-    )
-    list_editable = (
-        'is_published',
-    )
-"""
+admin.site.register(Catalog)
+admin.site.register(Payment_type)
+admin.site.register(Receiving_type)
+admin.site.register(Client_type)
+admin.site.register(Goods)
+admin.site.register(Orders)

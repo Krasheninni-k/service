@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}
+  Список товаров
+{% endblock %}
+{% block content %}
+  <div class="col d-flex justify-content-center">
+    <div class="card" style="width: 60rem;">
+      <div class="card-header">
+        Список товаров
+      </div>
+      <div class="card-body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Номер</th>
+              <th>Дата закупки</th>
+              <th>Дата получения</th>
+              <th>Продукт</th>
+              <th>Себестоимость ед.</th>
+              <th>Цена продажи</th>
+
+            </tr>
+          </thead>
+          <tbody> 
+            {% for i in sales_list %}
+              <tr>
+                <td>{{ i.order_number.order_number }}</td>
+                <td>{{ i.order_date.order_date|date:"d-m-Y" }}</td>
+                <td>{{ i.received_date.received_date|date:"d-m-Y" }}</td>
+                <td>{{ i.product }}</td>
+                <td>{{ i.cost_price_RUB }}</td>
+                <td>{{ i.selling_price_RUB }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

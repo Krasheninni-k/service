@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from datetime import datetime
 
 from django.db import models
 from django.db.models import Max
@@ -29,6 +30,24 @@ class Catalog(BaseModel):
 
 
 class Orders(BaseModel):
+    order_number = models.IntegerField('Номер закупки',  default=0)
+    order_date = models.DateTimeField('Дата закупки', blank=True)
+    quantity = models.IntegerField('Количество единиц товаров',  default=1)
+    product_list = models.TextField('Cостав закупки', blank=True)
+    received_date = models.DateTimeField('Дата получения закупки', null=True, blank=True)
+    comment = models.CharField('Комментарий', max_length=256)
+
+    class Meta:
+        verbose_name = 'Закупка'
+        verbose_name_plural = 'Закупки'
+        ordering = ['-order_number']
+
+    def __str__(self):
+        date = self.order_date.strftime('%Y-%m-%d')
+        return f'{self.order_number} - {date} - {self.product_list}'
+    
+"""
+class Orders(BaseModel):
     number = models.IntegerField('Номер закупки',  default=0)
     comment = models.CharField('Комментарий', max_length=256)
     order_date = models.DateTimeField('Дата закупки', null=True, blank=True)
@@ -36,9 +55,8 @@ class Orders(BaseModel):
     cost_price_RUB = models.DecimalField(
         'Себестоимость в руб. (Например, 25123.13)', max_digits=9, decimal_places=2,
         null=True, blank=True)
-    product = models.ForeignKey(
+    product = models.ManyToManyField(
         Catalog,
-        on_delete=models.CASCADE,
         related_name='orders',
         verbose_name='Продукт')
 
@@ -47,9 +65,9 @@ class Orders(BaseModel):
         verbose_name_plural = 'Заказы'
 
     def __str__(self):
-        return self.title
-
+        return str(f'{self.number} - {self.product}')
 """
+
 class Payment_type(BaseModel):
     title = models.CharField('Способ оплаты', max_length=256)
 
@@ -84,10 +102,14 @@ class Client_type(BaseModel):
 
 
 class Goods(BaseModel):
-    date_of_order = models.DateTimeField('Дата заказа', auto_now_add=True)
-    date_of_receiving = models.DateTimeField('Дата получения', null=True,
-                                             blank=True)
-    date_of_sell = models.DateTimeField('Дата продажи', null=True, blank=True)
+    order_number = models.ForeignKey(
+        Orders, on_delete=models.CASCADE, related_name='goods_order_number', null=True, blank=True)
+    order_date = models.ForeignKey(
+        Orders, on_delete=models.CASCADE, related_name='goods_order_date', null=True, blank=True)
+    received_date = models.ForeignKey(
+        Orders, on_delete=models.CASCADE, related_name='goods_received_date', null=True, blank=True)
+    sale_date = models.DateTimeField('Дата продажи', null=True, blank=True)
+    sold = models.BooleanField('Продано', default=False)
     product = models.ForeignKey(
         Catalog,
         on_delete=models.CASCADE,
@@ -95,7 +117,7 @@ class Goods(BaseModel):
         verbose_name='Товар')
     ordering_price_RMB = models.DecimalField(
         'Цена закупки в юанях', max_digits=8, decimal_places=2,
-        null=True, blank=True)
+        null=True, blank=True, default=0)
     cost_price_RUB = models.DecimalField(
         'Себестоимость в руб.', max_digits=9, decimal_places=2,
         null=True, blank=True)
@@ -106,28 +128,31 @@ class Goods(BaseModel):
         Payment_type,
         on_delete=models.CASCADE,
         related_name='goods',
-        verbose_name='Способ оплаты')
+        verbose_name='Способ оплаты',
+        null=True, blank=True)
     client_type = models.ForeignKey(
         Client_type,
         on_delete=models.CASCADE,
         related_name='goods',
-        verbose_name='Тип покупателя')
+        verbose_name='Тип покупателя',
+        null=True, blank=True)
     receiving_type = models.ForeignKey(
         Receiving_type,
         on_delete=models.CASCADE,
         related_name='goods',
-        verbose_name='Тип получения')
+        verbose_name='Тип получения',
+        null=True, blank=True)
 
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Товары'
-        ordering = ('date_of_order', 'product')
+        ordering = ('order_date', 'product')
 
     def __str__(self):
         return self.product
 
 
-
+"""
 
 User = get_user_model()
 

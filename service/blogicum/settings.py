@@ -1,4 +1,5 @@
 from pathlib import Path
+import locale
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_bootstrap5',
     'debug_toolbar',
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
@@ -108,3 +110,8 @@ CSRF_FAILURE_VIEW = 'pages.views.csrf_failure'
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
+
+locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+
+USE_THOUSAND_SEPARATOR = True
+THOUSAND_SEPARATOR = ' '

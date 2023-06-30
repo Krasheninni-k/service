@@ -6,16 +6,28 @@ app_name = 'app'
 
 urlpatterns = [
      path('', views.index,
-         name='index'),
+          name='index'),
+     # Закупки
      path('app/add_order/', views.add_order,
-         name='add_order'),      
-     path('app/add_order/detail', views.add_order_detail,
-         name='add_order_detail'),    
-     path('app/orders/', views.order_list,
-         name='order_list'),       
+          name='add_order'),
+     path('app/add_order_detail', views.add_order_detail,
+          name='add_order_detail'),
+     path('app/orders/', views.orders_list,
+          name='orders_list'),
+     path('app/orders/<int:pk>/', views.order_detail,
+          name='order_detail'),
+     path('app/orders/<int:pk>/received', views.received_order,
+          name='order_received'),
+     # Продажи
+     path('app/add_sale/', views.add_sale,
+          name='add_sale'),
+     path('app/add_sale_detail', views.add_sale_detail,
+          name='add_sale_detail'),
+     path('app/sales/', views.sales_list,
+          name='sales_list'),
+     # Пользователи
      path('profile/<slug:username>/', views.UserDetailView.as_view(),
-         name='profile'),]
-         
+          name='profile'), ]
 
 """
     path('profile/<slug:username>/edit_profile',
