@@ -1,9 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from datetime import datetime
-
-from django.db import models
-from django.db.models import Max
 
 User = get_user_model()
 
@@ -18,8 +14,31 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+
 class Catalog(BaseModel):
     title = models.CharField('Название', max_length=256)
+    price_RUB = models.DecimalField(
+        'Цена по прайсу, руб.', max_digits=9, decimal_places=2,
+        null=True, blank=True, default=0)
+    target_price_RUB = models.DecimalField(
+        'Расчетная цена, руб.', max_digits=9, decimal_places=2,
+        null=True, blank=True, default=0)
+    market_price_RUB = models.DecimalField(
+        'Рыночная цена, руб.', max_digits=9, decimal_places=2,
+        null=True, blank=True, default=0)
+    length = models.DecimalField(
+        'Длина в см', max_digits=5, decimal_places=2,
+        null=True, blank=True, default=0)
+    width = models.DecimalField(
+        'Ширина в см', max_digits=5, decimal_places=2,
+        null=True, blank=True, default=0)
+    height = models.DecimalField(
+        'Высота в см', max_digits=5, decimal_places=2,
+        null=True, blank=True, default=0)
+    weight = models.DecimalField(
+        'Вес в кг', max_digits=4, decimal_places=2,
+        null=True, blank=True, default=0)
+    image = models.ImageField('Фото', upload_to='app_images', blank=True)
 
     class Meta:
         verbose_name = 'Каталог товаров'
@@ -28,45 +47,6 @@ class Catalog(BaseModel):
     def __str__(self):
         return self.title
 
-
-class Orders(BaseModel):
-    order_number = models.IntegerField('Номер закупки',  default=0)
-    order_date = models.DateTimeField('Дата закупки', blank=True)
-    quantity = models.IntegerField('Количество единиц товаров',  default=1)
-    product_list = models.TextField('Cостав закупки', blank=True)
-    received_date = models.DateTimeField('Дата получения закупки', null=True, blank=True)
-    comment = models.CharField('Комментарий', max_length=256)
-
-    class Meta:
-        verbose_name = 'Закупка'
-        verbose_name_plural = 'Закупки'
-        ordering = ['-order_number']
-
-    def __str__(self):
-        date = self.order_date.strftime('%Y-%m-%d')
-        return f'{self.order_number} - {date} - {self.product_list}'
-    
-"""
-class Orders(BaseModel):
-    number = models.IntegerField('Номер закупки',  default=0)
-    comment = models.CharField('Комментарий', max_length=256)
-    order_date = models.DateTimeField('Дата закупки', null=True, blank=True)
-    quantity = models.IntegerField('Количество единиц товаров',  default=1)
-    cost_price_RUB = models.DecimalField(
-        'Себестоимость в руб. (Например, 25123.13)', max_digits=9, decimal_places=2,
-        null=True, blank=True)
-    product = models.ManyToManyField(
-        Catalog,
-        related_name='orders',
-        verbose_name='Продукт')
-
-    class Meta:
-        verbose_name = 'Заказ'
-        verbose_name_plural = 'Заказы'
-
-    def __str__(self):
-        return str(f'{self.number} - {self.product}')
-"""
 
 class Payment_type(BaseModel):
     title = models.CharField('Способ оплаты', max_length=256)
@@ -101,26 +81,98 @@ class Client_type(BaseModel):
         return self.title
 
 
-class Goods(BaseModel):
+class Orders(BaseModel):
+    order_number = models.IntegerField('Номер закупки',  default=0)
+    order_date = models.DateTimeField('Дата закупки', blank=True)
+    quantity = models.IntegerField('Количество единиц товаров',  default=1)
+    product_list = models.TextField('Cостав закупки', blank=True)
+    total_cost = models.DecimalField(
+        'Себестоимость закупки', max_digits=8, decimal_places=2,
+        null=True, blank=True, default=0)
+    received_date = models.DateTimeField('Дата получения закупки',
+                                         null=True, blank=True)
+    comment = models.CharField('Комментарий', max_length=256)
+
+    class Meta:
+        verbose_name = 'Закупка'
+        verbose_name_plural = 'Закупки'
+        ordering = ['-order_number']
+        constraints = (models.UniqueConstraint(
+            fields=('order_number',), name='Unique order_number',),)
+
+    def __str__(self):
+        date = self.order_date.strftime('%Y-%m-%d')
+        return f'{self.order_number} - {date} - {self.product_list}'
+
+
+class OrderDetail(BaseModel):
     order_number = models.ForeignKey(
-        Orders, on_delete=models.CASCADE, related_name='goods_order_number', null=True, blank=True)
+        Orders,
+        on_delete=models.CASCADE,
+        related_name='order_detail_order_number',
+        verbose_name='Номер закупки',
+        null=True, blank=True)
     order_date = models.ForeignKey(
-        Orders, on_delete=models.CASCADE, related_name='goods_order_date', null=True, blank=True)
+        Orders,
+        on_delete=models.CASCADE,
+        related_name='order_detail_order_date',
+        verbose_name='Дата закупки',
+        null=True, blank=True)
     received_date = models.ForeignKey(
-        Orders, on_delete=models.CASCADE, related_name='goods_received_date', null=True, blank=True)
-    sale_date = models.DateTimeField('Дата продажи', null=True, blank=True)
-    sold = models.BooleanField('Продано', default=False)
+        Orders,
+        on_delete=models.CASCADE,
+        related_name='order_detail_received_date',
+        verbose_name='Дата получения',
+        null=True, blank=True)
     product = models.ForeignKey(
         Catalog,
         on_delete=models.CASCADE,
-        related_name='goods',
+        related_name='order_detail',
         verbose_name='Товар')
+    quantity = models.IntegerField('Количество единиц товаров',  default=1)
     ordering_price_RMB = models.DecimalField(
         'Цена закупки в юанях', max_digits=8, decimal_places=2,
         null=True, blank=True, default=0)
     cost_price_RUB = models.DecimalField(
         'Себестоимость в руб.', max_digits=9, decimal_places=2,
+        null=True, blank=True, default=0)
+
+
+class Goods(BaseModel):
+    order_number = models.ForeignKey(
+        Orders,
+        on_delete=models.CASCADE,
+        related_name='goods_order_number',
         null=True, blank=True)
+    order_date = models.ForeignKey(
+        Orders,
+        on_delete=models.CASCADE,
+        related_name='goods_order_date',
+        null=True, blank=True)
+    received_date = models.ForeignKey(
+        Orders,
+        on_delete=models.CASCADE,
+        related_name='goods_received_date',
+        null=True, blank=True)
+    product = models.ForeignKey(
+        OrderDetail,
+        on_delete=models.CASCADE,
+        related_name='goods',
+        verbose_name='Наименование товара')
+    ordering_price_RMB = models.ForeignKey(
+        OrderDetail,
+        on_delete=models.CASCADE,
+        related_name='goods_ordering_price_RMB',
+        verbose_name='Цена закупки в юанях',
+        null=True, blank=True)
+    cost_price_RUB = models.ForeignKey(
+        OrderDetail,
+        on_delete=models.CASCADE,
+        related_name='goods_cost_price_RUB',
+        verbose_name='Себестоимость в рублях',
+        null=True, blank=True)
+    sale_date = models.DateTimeField('Дата продажи', null=True, blank=True)
+    sold = models.BooleanField('Продано', default=False)
     selling_price_RUB = models.DecimalField(
         'Цена продажи в руб.', max_digits=9, decimal_places=2,
         null=True, blank=True)
@@ -152,6 +204,8 @@ class Goods(BaseModel):
         return self.product
 
 
+class ForStock(models.Model):
+    title = models.CharField('Название товара', max_length=256)
 """
 
 User = get_user_model()

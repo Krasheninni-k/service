@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}
+  Каталог продукции
+{% endblock %}
+{% block content %}
+<div class="col d-flex justify-content-center">
+  <div class="card" style="width: 60rem;">
+    <div class="card-header d-flex justify-content-between">
+      <span>Каталог продукции:</span>
+      <a class="btn btn-primary" href="{% url 'app:add_order' %}" role="button">Добавить товар</a>
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Наименование</th>
+            <th> В наличии</th>
+            <th>В ожидании</th>
+            <th>Цена по прайсу</th>
+            <th>Расчетная цена</th>
+            <th> Рыночная цена</th>
+          </tr>
+        </thead>
+        <tbody> 
+          {% for catalog in page_obj %}
+            <tr>
+              <td>{{ catalog.title }}</td>
+              <td>{{ catalog.count_stock }}</td>
+              <td>{{ catalog.count_wait }}</td>
+              <td>{{ catalog.price_RUB }}</td>
+              <td></td>
+              <td>В разработке</td>
+              <td>
+                <a class="btn btn-sm text-muted" href="{% url 'app:catalog_detail' catalog.id %}" role="button">
+                  Детали
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% include "includes/paginator.html" %}
+{% endblock %}

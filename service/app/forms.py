@@ -1,41 +1,105 @@
 from django import forms
 from datetime import date
-import datetime
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
-from .models import Orders, Goods, Payment_type, Catalog
+from .models import Orders, Goods, Payment_type, OrderDetail
 from .utils import max_value
 
 
-class OrderForm(forms.Form):
-    number = forms.IntegerField(
-        label="Номер закупки",
-        initial=max_value() + 1,
-        help_text=f'Номер последней закупки - {max_value}'
-        )
-    order_date = forms.DateField(
-        label='Дата закупки',
-        initial=date.today(),
-        help_text=f'Сегодня - {date.today().strftime("%d %m")}'
-        )
-    quantity = forms.IntegerField(
-        label='Количество наименований товара',
-        )
+class OrderForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(OrderForm, self).__init__(*args, **kwargs)
+        max_order_number = max_value()
+        initial = date.today().strftime("%d.%m.%Y")
+        self.fields['order_number'].initial = max_order_number + 1
+        self.fields['order_number'].help_text = f'Номер последней закупки - { max_order_number }'
+        self.fields['order_date'].initial = initial
+        self.fields['order_date'].help_text = f'Сегодня - { initial }'
+
+    def clean(self):
+        super().clean()
+
+    def clean_order_date(self):
+        order_date = self.cleaned_data.get('order_date')
+        current_date = timezone.now().date()
+        if order_date.date() > current_date:
+            raise ValidationError("Нельзя указывать дату в будущем.")
+        return order_date
+
+    class Meta:
+        model = Orders
+        fields = ('order_number', 'order_date', 'quantity')
 
 
-class OrderDetailForm(forms.Form):
-    product = forms.ModelChoiceField(
-        queryset=Catalog.objects.all(),
-        label="Продукт",
-        help_text='Выберете продукт'
-        )
-    quantity = forms.IntegerField(
-        label='Количество единиц товаров',
-        help_text='Укажите количество товаров'
-        )
-    cost_price_RUB = forms.DecimalField(
-        label='Себестоимость в руб. (Например, 25123.13)',
-        help_text='Укажите себестоимость товара в рублях',
-        max_digits=9, decimal_places=2)
+class OrderDetailForm(forms.ModelForm):
+
+    class Meta:
+        model = OrderDetail
+        fields = ('product', 'cost_price_RUB', 'quantity', 'ordering_price_RMB')
+        widgets = {
+            'cost_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
+            'ordering_price_RMB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
+
+
+class ReceivedForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(ReceivedForm, self).__init__(*args, **kwargs)
+        initial = date.today().strftime("%d.%m.%Y")
+        self.fields['received_date'].initial = initial
+        self.fields['received_date'].help_text = f'Сегодня - { initial }'
+
+    def clean_received_date(self):
+        received_date = self.cleaned_data.get('received_date')
+        current_date = timezone.now().date()
+        if received_date.date() > current_date:
+            raise ValidationError("Нельзя указывать дату в будущем.")
+        return received_date
+
+    class Meta:
+        model = Orders
+        fields = ('received_date',)
+        widgets = {
+            'received_date': forms.DateInput(attrs={'format': '%d.%m.%Y'})}
+
+
+class EditDeleteOrderForm(forms.ModelForm):
+
+    def clean(self):
+        super().clean()
+
+    def clean_received_date(self):
+        received_date = self.cleaned_data['received_date']
+        current_date = timezone.now().date()
+        if received_date.date() > current_date:
+            raise ValidationError("Нельзя указывать дату в будущем.")
+        return received_date
+
+    def clean_order_date(self):
+        order_date = self.cleaned_data['order_date']
+        current_date = timezone.now().date()
+        if order_date.date() > current_date:
+            raise ValidationError("Нельзя указывать дату в будущем.")
+        return order_date
+
+    class Meta:
+        model = Orders
+        fields = ('order_number', 'order_date', 'received_date')
+        widgets = {
+            'order_date': forms.DateInput(attrs={'format': '%d.%m.%Y'}),
+            'received_date': forms.DateInput(attrs={'format': '%d.%m.%Y'})}
+
+
+class EditOrderDetailForm(forms.ModelForm):
+
+    class Meta:
+        model = OrderDetail
+        fields = ('product', 'cost_price_RUB', 'ordering_price_RMB')
+        widgets = {
+            'cost_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
+            'ordering_price_RMB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
 
 
 class SaleForm(forms.Form):
@@ -48,7 +112,7 @@ class SaleForm(forms.Form):
         help_text='Укажите дату продажи'
         )
     quantity = forms.IntegerField(
-        label='Количество', 
+        label='Количество',
         help_text='Укажите количество наименований товара'
         )
     payment_type = forms.ModelChoiceField(
@@ -56,7 +120,7 @@ class SaleForm(forms.Form):
         label='Способ оплаты',
         help_text='Выберите способ оплаты'
         )
-    
+
 
 class SaleDetailForm(forms.ModelForm):
 
@@ -65,31 +129,3 @@ class SaleDetailForm(forms.ModelForm):
         fields = ('product', 'selling_price_RUB',)
         widgets = {
             'selling_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
-
-
-class ReceivedForm(forms.ModelForm):
-
-    class Meta:
-        model = Orders
-        fields = ('received_date',)
-        widgets = {
-            'received_date': forms.DateInput(attrs={'type': 'date'})}
-        
-
-class DeleteOrderForm(forms.ModelForm):
-
-    class Meta:
-        model = Orders
-        fields = ('order_number', 'order_date',)
-        widgets = {
-            'order_date': forms.DateInput(attrs={'format': '%d.%m.%Y'})}
-
-"""
-
-class ReceivedForm(forms.Form):
-    received_date = forms.DateField(
-        label='Дата получения закупки',
-        initial=date.today(),
-        help_text=f'Сегодня - {date.today().strftime("%d %m")}'
-        )
-"""

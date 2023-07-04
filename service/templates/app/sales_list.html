@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}
-  Список товаров
+Список товаров
 {% endblock %}
 {% block content %}
   <div class="col d-flex justify-content-center">
@@ -16,6 +16,7 @@
               <th>Дата закупки</th>
               <th>Дата получения</th>
               <th>Продукт</th>
+              <th>Цена в юанях</th>
               <th>Себестоимость ед.</th>
               <th>Цена продажи</th>
 
@@ -27,8 +28,9 @@
                 <td>{{ i.order_number.order_number }}</td>
                 <td>{{ i.order_date.order_date|date:"d-m-Y" }}</td>
                 <td>{{ i.received_date.received_date|date:"d-m-Y" }}</td>
-                <td>{{ i.product }}</td>
-                <td>{{ i.cost_price_RUB }}</td>
+                <td>{{ i.product.product }}</td>
+                <td>{{ i.ordering_price_RMB.ordering_price_RMB }}</td>
+                <td>{{ i.cost_price_RUB.cost_price_RUB }}</td>
                 <td>{{ i.selling_price_RUB }}</td>
               </tr>
             {% endfor %}

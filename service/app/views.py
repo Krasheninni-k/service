@@ -9,11 +9,13 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from datetime import datetime
+from django.db.models import F, Sum, Q, Case, When, IntegerField
 
-from app.models import Orders, Goods, Catalog
-from app.forms import OrderForm, OrderDetailForm, SaleForm, SaleDetailForm, ReceivedForm, DeleteOrderForm
+from app.models import Orders, Goods, Catalog, OrderDetail, ForStock
 
-from app.utils import create_goods
+from app.forms import OrderForm, OrderDetailForm, SaleForm, SaleDetailForm, ReceivedForm, EditDeleteOrderForm, EditOrderDetailForm
+
+from app.utils import create_goods, change_product_list
 
 current_time = timezone.now()
 User = get_user_model()
@@ -27,10 +29,9 @@ def index(request):
 # Закупки
 @login_required
 def add_order_detail(request):
-    number = int(request.GET.get('number'))
+    number = int(request.GET.get('order_number'))
     quantity_name = int(request.GET.get('quantity'))
-    order_date_str = request.GET.get('order_date')
-    order_date = datetime.strptime(order_date_str, '%Y-%m-%d').date()
+    order_date = request.GET.get('order_date')
     template = 'app/add_order_detail.html'
     forms = []
     product_list = []
@@ -43,22 +44,33 @@ def add_order_detail(request):
             order = Orders.objects.create(
                 order_number=number,
                 created_by=request.user,
-                order_date=order_date,
+                order_date=datetime.strptime(order_date, "%Y-%m-%d"),
                 quantity=quantity_name
             )
             for i in range(quantity_name):
+                quantity = int(request.POST.get('form_' + str(i+1) + '-quantity'))
                 product = Catalog.objects.get(
                     id=int(request.POST.get('form_' + str(i+1) + '-product')))
-                quantity = int(request.POST.get('form_' + str(i+1) + '-quantity'))
-                cost_price_RUB = request.POST.get('form_' + str(i+1) + '-cost_price_RUB')
+                order_detail = OrderDetail.objects.create(
+                    order_number=Orders.objects.get(id=order.id),
+                    order_date=Orders.objects.get(id=order.id),
+                    created_by=request.user,
+                    product=product,
+                    quantity=quantity,
+                    cost_price_RUB=request.POST.get('form_' + str(i+1) + '-cost_price_RUB'),
+                    ordering_price_RMB=request.POST.get('form_' + str(i+1) + '-ordering_price_RMB')
+                )
+                order_detail.save()
                 product_list.append(f'{product} - {quantity} ед.')
                 order.product_list = ', '.join(str(item) for item in product_list)
                 order.save()
                 create_goods(
-                    order,
-                    product,
-                    cost_price_RUB,
-                    quantity)
+                    order, order_detail, quantity)
+            total_cost = OrderDetail.objects.filter(
+                order_number=order.id).aggregate(
+                total_cost=Sum(F('quantity') * F('cost_price_RUB')))['total_cost']
+            order.total_cost = total_cost
+            order.save()
             return redirect('app:orders_list')
     else:
         for i in range(quantity_name):
@@ -77,10 +89,11 @@ def add_order(request):
     if form.is_valid():
         quantity = form.cleaned_data['quantity']
         order_date = form.cleaned_data['order_date']
-        number = form.cleaned_data['number']
+        order_date = order_date.date()
+        order_number = form.cleaned_data['order_number']
         redirect_url = reverse(
-            'app:add_order_detail') + f'?quantity={quantity}&order_date={order_date}&number={number}'
-        return HttpResponseRedirect(redirect_url)
+            'app:add_order_detail') + f'?quantity={quantity}&order_date={order_date}&order_number={order_number}'
+        return redirect(redirect_url)
     return render(request, template, context)
 
 
@@ -98,21 +111,25 @@ def orders_list(request):
 @login_required
 def order_detail(request, pk):
     template = 'app/order_detail.html'
-    order_info = Goods.objects.filter(
+    order_info = OrderDetail.objects.filter(
         is_published=True,
-        order_number_id__order_number=pk).select_related('product_id').values(
+        order_number_id__order_number=pk).select_related('product').values(
         'order_number_id__order_number',
           'order_date_id__order_date',
+          'quantity',
+          'id',
             'product__title',
-              'cost_price_RUB').annotate(count=Count('product_id'))
+              'cost_price_RUB',
+              'ordering_price_RMB')
     context = {'order_info': order_info}
     return render(request, template, context)
+
 
 @login_required
 def delete_order(request, pk):
     template = 'app/edit_delete_order.html'
     instance = get_object_or_404(Orders, order_number=pk)
-    form = DeleteOrderForm(instance=instance)
+    form = EditDeleteOrderForm(instance=instance)
     context = {'form': form}
     if request.method == 'POST':
         instance.delete()
@@ -123,20 +140,38 @@ def delete_order(request, pk):
 def edit_order(request, pk):
     template = 'app/edit_delete_order.html'
     instance = get_object_or_404(Orders, order_number=pk)
-    form = DeleteOrderForm(instance=instance)
-    context = {'form': form}
     if request.method == 'POST':
-        form = DeleteOrderForm(request.POST, instance=instance)
+        form = EditDeleteOrderForm(request.POST, instance=instance)
         if form.is_valid():
             form.save()
             return redirect('app:orders_list')
+    else:
+        form = EditDeleteOrderForm(instance=instance)
+
+    context = {'form': form}
     return render(request, template, context)
+
+@login_required
+def edit_order_detail(request, **kwargs):
+    template = 'app/edit_order_detail.html'
+    instance = get_object_or_404(OrderDetail, pk=kwargs['pk'])
+    order_number = instance.order_number.order_number
+    form = EditOrderDetailForm(instance=instance)
+    context = {'form': form}
+    if request.method == 'POST':
+        form = EditOrderDetailForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            change_product_list(instance)
+            return redirect('app:order_detail', pk=order_number)
+    return render(request, template, context)
+
 
 @login_required
 def received_order(request, pk):
     template = 'app/received_order.html'
     order = get_object_or_404(Orders, order_number=pk)
-    form = ReceivedForm(instance=order)
+    form = ReceivedForm(request.POST or None)
     context = {'form': form}
     if request.method == 'POST':
         form = ReceivedForm(request.POST, instance=order)
@@ -145,6 +180,48 @@ def received_order(request, pk):
             redirect_url = reverse('app:orders_list')
             return HttpResponseRedirect(redirect_url)
     return render(request, template, context)
+
+# Каталог
+@login_required
+def catalog(request):
+    template = 'app/catalog.html'
+    catalog = Catalog.objects.select_related('created_by').filter(
+        is_published=True).annotate(
+        count_stock=Count('order_detail__goods',
+                      filter=Q(order_detail__goods__received_date__received_date__isnull=False)),
+        count_wait=Count('order_detail__goods',
+                      filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('title')[:100]
+    paginator = Paginator(catalog, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {'page_obj': page_obj}
+    return render(request, template, context)
+
+@login_required
+def catalog_detail(request, pk):
+    template = 'app/catalog_detail.html'
+    product = get_object_or_404(Catalog, pk=pk)
+    context = {'product': product}
+    return render(request, template, context)
+
+# Остатки
+@login_required
+def stock_list(request):
+    template = 'app/stock_list.html'
+    stock_list = Catalog.objects.filter(
+    order_detail__goods__isnull=False).annotate(
+    count_stock=Count('order_detail__goods',
+                      filter=Q(order_detail__goods__received_date__received_date__isnull=False)),
+    wait_stock=Count('order_detail__goods',
+                      filter=Q(order_detail__goods__received_date__received_date__isnull=True)),                  
+    stock_cost=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
+                 filter=Q(order_detail__goods__received_date__received_date__isnull=False)),
+    wait_cost=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
+                 filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('count_stock')
+    context = {'stock_list': stock_list}
+    return render(request, template, context)
+
+
 
 
 #  Продажи
@@ -201,11 +278,49 @@ def add_sale(request):
 @login_required
 def sales_list(request):
     template = 'app/sales_list.html'
-    sales_list = Goods.objects.select_related('created_by').filter(
+    sales_list = Goods.objects.select_related(
+        'order_number', 'order_date', 'received_date', 'product', 'product__product',
+          'ordering_price_RMB', 'cost_price_RUB', 'created_by').filter(
         is_published=True)[:100]
     context = {'sales_list': sales_list}
     return render(request, template, context)
 
+"""
+ count_stock=Case(
+            When(order_detail__goods__received_date__exact=None,
+                 then=Count('order_detail__goods')),
+            default=0,
+            output_field=IntegerField()
+        )
+
+queryset = MyModel.objects.annotate(
+    new_field=Case(
+        When(some_condition=True, then=Value(1)),
+        When(some_other_condition=False, then=Value(2)),
+        default=Value(3),
+        output_field=IntegerField()
+    )
+)
+
+    ForStock.objects.all().delete()
+    stock_list = Goods.objects.filter(
+        received_date__received_date__isnull=False)
+    for_stock_objs = [
+        ForStock(title=stock.product.product.title) for stock in stock_list]
+    ForStock.objects.bulk_create(for_stock_objs)
+    for_stock_list = ForStock.objects.values('title').annotate(count=Count('title'))
+"""
+
+"""
+    stock_list = stock_list.filter(
+        order_detail__goods__isnull=False).annotate(
+        count=Count('order_detail__goods')).order_by()
+    
+    wait_list = Goods.objects.filter(received_date=None)
+    wait_list = wait_list.filter(
+        order_detail__goods__isnull=False).annotate(
+        count=Count('order_detail__goods')).order_by()
+    """
 
 # Профили
 class UserDetailView(DetailView):

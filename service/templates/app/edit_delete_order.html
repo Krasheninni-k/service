@@ -14,7 +14,8 @@
     <div class="card" style="width: 40rem;">
       <div class="card-header">
         {% if '/edit/' in request.path %}
-          Редактирование данных закупки
+          Редактирование данных закупки № {{ form.instance.order_number }} от
+          {{ form.instance.order_date|date:"d-m-Y" }}
         {% else %}
           Удаление данных закупки
         {% endif %}

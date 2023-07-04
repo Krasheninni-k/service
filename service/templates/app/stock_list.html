@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}
+Товары в наличии и ожидании
+{% endblock %}
+{% block content %}
+  <div class="col d-flex justify-content-center">
+    <div class="card" style="width: 60rem;">
+      <div class="card-header">
+        Товары в наличии и ожидании
+      </div>
+      <div class="card-body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Продукт</th>
+              <th>В наличии</th>
+              <th>Себестоимость</th>
+              <th>Цена продажи</th>
+              <th>В ожидании</th>
+              <th>Себестоимость</th>
+              <th>Цена продажи</th>
+            </tr>
+          </thead>
+          <tbody> 
+            {% for i in stock_list %}
+              <tr>
+                <td>{{ i.title }}</td>
+                <td>{{ i.count_stock }}</td>
+                <td>{% if i.stock_cost %} {{ i.stock_cost }} {% endif %}</td>
+                <td></td>
+                <td>{{ i.count_wait }}</td>
+                <td>{% if i.wait_cost %} {{ i.wait_cost }} {% endif %}</td>
+                <td></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

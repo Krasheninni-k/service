@@ -22,7 +22,13 @@
             <div class="btn-group" role="group" aria-label="Basic outlined example">
 
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
+                href="{% url 'app:catalog' %}">Каталог</a></button>
+
+              <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
                 href="{% url 'app:orders_list' %}">Закупки</a></button>
+
+              <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
+                  href="{% url 'app:stock_list' %}">Остатки</a></button>
 
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
                 href="{% url 'app:sales_list' %}">Продажи</a></button>

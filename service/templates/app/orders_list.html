@@ -17,6 +17,7 @@
             <th style="width: 100px;">Оплачено</th>
             <th>Количество</th>
             <th>Состав закупки</th>
+            <th>Себестоимость</th>
             <th style="width: 100px;">Получено</th>
           </tr>
         </thead>
@@ -27,17 +28,18 @@
               <td>{{ order.order_date|date:"d-m-Y" }}</td>
               <td>{{ order.quantity }}</td>
               <td>{{ order.product_list }}</td>
-              <td>{% if  order.received_date %} {{ order.received_date|date:"d-m-Y" }} {% endif %}</td>
+              <td>{{ order.total_cost }}</td>
+              <td>{% if  order.received_date %} {{ order.received_date|date:"d-m-Y" }} 
+                {% else %} 
+                <a class="btn btn-sm text-muted" href="{% url 'app:order_received' order.order_number %}" role="button">
+                  В пути
+                </a>
+                {% endif %}</td>
               <td>{{ order.cost_price_RUB }}</td>
               <td>
                 <a class="btn btn-sm text-muted" href="{% url 'app:order_detail' order.order_number %}" role="button">
                   Детали
                 </a>
-                {% if not order.received_date %}
-                <a class="btn btn-sm text-muted" href="{% url 'app:order_received' order.order_number %}" role="button">
-                  Получено
-                </a>
-                {% endif %}
               </td>
             </tr>
           {% endfor %}

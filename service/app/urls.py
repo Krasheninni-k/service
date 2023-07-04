@@ -20,8 +20,18 @@ urlpatterns = [
           name='delete_order'),
      path('app/orders/<int:pk>/edit/', views.edit_order,
           name='edit_order'),
+     path('app/orders/<int:order_number>/edit/<int:pk>', views.edit_order_detail,
+          name='edit_order_detail'),
      path('app/orders/<int:pk>/received/', views.received_order,
           name='order_received'),
+     # Остатки
+     path('app/goods/stock', views.stock_list,
+          name='stock_list'),
+     # Каталог
+     path('app/goods/catalog', views.catalog,
+          name='catalog'),
+     path('app/goods/catalog/<int:pk>/', views.catalog_detail,
+          name='catalog_detail'),     
      # Продажи
      path('app/add_sale/', views.add_sale,
           name='add_sale'),

@@ -1,43 +1,18 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
 {% block title %}
-  {% if '/edit/' in request.path %}
-    Редактирование закупки
-  {% elif "/delete/" in request.path %}
-    Удаление закупки
-  {% else %}
     Добавление закупки
-  {% endif %}
 {% endblock %}
 {% block content %}
   <div class="col d-flex justify-content-center">
     <div class="card" style="width: 40rem;">
-      <div class="card-header">
-        {% if '/edit/' in request.path %}
-          Редактирование данных закупки
-        {% elif '/delete/' in request.path %}
-          Удаление данных закупки
-        {% else %}
+      <div class="card-header"> 
           Внесите информацию о новой закупке
-        {% endif %}
       </div>
       <div class="card-body">
         <form method="post" enctype="multipart/form-data">
           {% csrf_token %}
-          {% if not '/delete/' in request.path %}
             {% bootstrap_form form %}
-          {% else %}
-            <article>
-              {% if object.image %}
-                <a href="{{ object.image.url }}" target="_blank">
-                  <img class="border-3 rounded img-fluid img-thumbnail mb-2" src="{{ object.image.url }}">
-                </a>
-              {% endif %}
-              <p>{{ object.pub_date|date:"d E Y" }} | {% if object.location and object.is_published %}{{ object.location.name }}{% else %}Планета Земля{% endif %}<br>
-              <h3>{{ object.title }}</h3>
-              <p>{{ object.text|linebreaksbr }}</p>
-            </article>
-          {% endif %}
           {% bootstrap_button button_type="submit" content="Отправить" %}
         </form>
       </div>

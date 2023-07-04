@@ -1,6 +1,4 @@
-a = []
-b = 1
-a.append(b)
-a.append(128)
-a.append('ноу')
-print(a)
+from django.utils import timezone
+
+current_date = timezone.now().date()
+print(current_date)
