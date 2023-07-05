@@ -28,10 +28,16 @@ urlpatterns = [
      path('app/goods/stock', views.stock_list,
           name='stock_list'),
      # Каталог
-     path('app/goods/catalog', views.catalog,
+     path('app/goods/catalog/', views.catalog,
           name='catalog'),
      path('app/goods/catalog/<int:pk>/', views.catalog_detail,
-          name='catalog_detail'),     
+          name='catalog_detail'),
+     path('app/goods/catalog/add/', views.catalog_add,
+          name='catalog_add'),     
+     path('app/goods/catalog/<int:pk>/edit/', views.catalog_edit,
+          name='catalog_edit'),
+     path('app/goods/catalog/<int:pk>/delete/', views.catalog_delete,
+          name='catalog_delete'),
      # Продажи
      path('app/add_sale/', views.add_sale,
           name='add_sale'),

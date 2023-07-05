@@ -7,7 +7,7 @@
   <div class="card" style="width: 60rem;">
     <div class="card-header d-flex justify-content-between">
       <span>Каталог продукции:</span>
-      <a class="btn btn-primary" href="{% url 'app:add_order' %}" role="button">Добавить товар</a>
+      <a class="btn btn-primary" href="{% url 'app:catalog_add' %}" role="button">Добавить товар</a>
     </div>
     <div class="card-body">
       <table class="table">
@@ -29,7 +29,7 @@
               <td>{{ catalog.count_wait }}</td>
               <td>{{ catalog.price_RUB }}</td>
               <td></td>
-              <td>В разработке</td>
+              <td>{% if catalog.market_price_RUB %} {{ catalog.market_price_RUB }} {% endif %}</td>
               <td>
                 <a class="btn btn-sm text-muted" href="{% url 'app:catalog_detail' catalog.id %}" role="button">
                   Детали

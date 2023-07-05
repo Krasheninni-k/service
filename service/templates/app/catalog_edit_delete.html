@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+
+{% block title %}
+  {% if '/edit/' in request.path %}
+    Редактирование карточки товара
+  {% else %}
+    Удаление карточки товара
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="col d-flex justify-content-center">
+    <div class="card" style="width: 40rem;">
+      <div class="card-header">
+        {% if '/edit/' in request.path %}
+          Редактирование карточки товара {{ form.instance.title }}
+        {% else %}
+          Удаление карточки товара {{ form.instance.title }}
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+        {% if '/edit/' in request.path %}
+          {% bootstrap_form form method="post" enctype="multipart/formdata" %}
+            {% bootstrap_button button_type="submit" content="Редактировать" %}
+          {% else %}
+            <article>
+              <p>Удалить карточку {{ instance.title }}</p>
+            </article>
+          {% bootstrap_button button_type="submit" content="Удалить" %}
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

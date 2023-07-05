@@ -26,13 +26,22 @@
               <tr>
                 <td>{{ i.title }}</td>
                 <td>{{ i.count_stock }}</td>
-                <td>{% if i.stock_cost %} {{ i.stock_cost }} {% endif %}</td>
+                <td>{% if i.cost_stock %} {{ i.cost_stock }} {% endif %}</td>
                 <td></td>
                 <td>{{ i.count_wait }}</td>
-                <td>{% if i.wait_cost %} {{ i.wait_cost }} {% endif %}</td>
+                <td>{% if i.cost_wait %} {{ i.cost_wait }} {% endif %}</td>
                 <td></td>
               </tr>
             {% endfor %}
+            <tr>
+              <th></th>
+              <th>{{ total_count_stock }}</th>
+              <th>{{ total_cost_stock }}</th>
+              <th></th>
+              <th>{{ total_count_wait }}</th>
+              <th>{{ total_cost_wait }}</th>
+              <th></th>
+            </tr>
           </tbody>
         </table>
       </div>

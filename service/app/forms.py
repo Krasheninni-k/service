@@ -3,7 +3,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .models import Orders, Goods, Payment_type, OrderDetail
+from .models import Orders, Goods, Payment_type, OrderDetail, Catalog
 from .utils import max_value
 
 
@@ -100,6 +100,16 @@ class EditOrderDetailForm(forms.ModelForm):
         widgets = {
             'cost_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
             'ordering_price_RMB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
+
+
+# Каталог
+class CatalogForm(forms.ModelForm):
+
+    class Meta:
+        model = Catalog
+        exclude = ('created_at', 'created_by', 'target_price_RUB', 'is_published')
+        widgets = {
+            'description': forms.Textarea(attrs={'cols': '40', 'rows': '3'})}
 
 
 class SaleForm(forms.Form):

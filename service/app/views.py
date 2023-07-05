@@ -11,9 +11,11 @@ from django.http import HttpResponseRedirect
 from datetime import datetime
 from django.db.models import F, Sum, Q, Case, When, IntegerField
 
-from app.models import Orders, Goods, Catalog, OrderDetail, ForStock
+from app.models import Orders, Goods, Catalog, OrderDetail
 
-from app.forms import OrderForm, OrderDetailForm, SaleForm, SaleDetailForm, ReceivedForm, EditDeleteOrderForm, EditOrderDetailForm
+from app.forms import (OrderForm, OrderDetailForm, SaleForm, SaleDetailForm,
+                        ReceivedForm, EditDeleteOrderForm, EditOrderDetailForm,
+                        CatalogForm)
 
 from app.utils import create_goods, change_product_list
 
@@ -54,6 +56,7 @@ def add_order_detail(request):
                 order_detail = OrderDetail.objects.create(
                     order_number=Orders.objects.get(id=order.id),
                     order_date=Orders.objects.get(id=order.id),
+                    received_date=Orders.objects.get(id=order.id),
                     created_by=request.user,
                     product=product,
                     quantity=quantity,
@@ -198,10 +201,58 @@ def catalog(request):
     return render(request, template, context)
 
 @login_required
+def catalog_add(request):
+    template = 'app/catalog_add.html'
+    form = CatalogForm(request.POST or None,
+                       files=request.FILES or None)
+    context = {'form': form}
+    if form.is_valid():
+        product = form.save(commit=False)
+        product.created_by = request.user
+        product.save()
+        return redirect('app:catalog')
+    return render(request, template, context)
+
+@login_required
 def catalog_detail(request, pk):
     template = 'app/catalog_detail.html'
     product = get_object_or_404(Catalog, pk=pk)
-    context = {'product': product}
+    product_count_stock = Goods.objects.filter(
+        Q(received_date__received_date__isnull=False), product__product=pk).values('id').count()
+    product_count_wait = Goods.objects.filter(
+        Q(received_date__received_date__isnull=True), product__product=pk).values('id').count()
+    order_list = OrderDetail.objects.filter(
+        product=pk).values('order_number__order_number',
+                           'order_date__order_date',
+                           'received_date__received_date',
+                           'quantity', 'cost_price_RUB', 'ordering_price_RMB').order_by('order_number')
+    context = {'product': product, 'order_list': order_list,
+               'product_count_stock': product_count_stock,
+               'product_count_wait': product_count_wait}
+    return render(request, template, context)
+
+@login_required
+def catalog_edit(request, pk):
+    template = 'app/catalog_edit_delete.html'
+    instance = get_object_or_404(Catalog, pk=pk)
+    if request.method == 'POST':
+        form = CatalogForm(request.POST, instance=instance, files=request.FILES or None)
+        if form.is_valid():
+            form.save()
+            return redirect('app:catalog')
+    else:
+        form = CatalogForm(instance=instance)
+    context = {'form': form}
+    return render(request, template, context)
+
+@login_required
+def catalog_delete(request, pk):
+    template = 'app/catalog_edit_delete.html'
+    instance = get_object_or_404(Catalog, pk=pk)
+    context = {'instance': instance}
+    if request.method == 'POST':
+        instance.delete()
+        return redirect('app:catalog')
     return render(request, template, context)
 
 # Остатки
@@ -212,16 +263,25 @@ def stock_list(request):
     order_detail__goods__isnull=False).annotate(
     count_stock=Count('order_detail__goods',
                       filter=Q(order_detail__goods__received_date__received_date__isnull=False)),
-    wait_stock=Count('order_detail__goods',
+    count_wait=Count('order_detail__goods',
                       filter=Q(order_detail__goods__received_date__received_date__isnull=True)),                  
-    stock_cost=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
+    cost_stock=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
                  filter=Q(order_detail__goods__received_date__received_date__isnull=False)),
-    wait_cost=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
-                 filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('count_stock')
-    context = {'stock_list': stock_list}
+    cost_wait=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
+                 filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('-count_stock')
+    total_count_stock = Goods.objects.filter(Q(received_date__received_date__isnull=False)).values('id').count()
+    total_count_wait = Goods.objects.filter(Q(received_date__received_date__isnull=True)).values('id').count()
+    
+    total_list = Goods.objects.filter(
+        is_published=True).annotate(
+        cost_stock=Sum('cost_price_RUB__cost_price_RUB', filter=Q(received_date__received_date__isnull=False)),
+        cost_wait=Sum('cost_price_RUB__cost_price_RUB', filter=Q(received_date__received_date__isnull=True)))
+    total_cost_stock = total_list.aggregate(total_cost_stock=Sum('cost_stock'))['total_cost_stock']
+    total_cost_wait = total_list.aggregate(total_cost_wait=Sum('cost_wait'))['total_cost_wait']
+    context = {'stock_list': stock_list,
+               'total_count_stock': total_count_stock, 'total_cost_stock': total_cost_stock,
+               'total_count_wait': total_count_wait, 'total_cost_wait': total_cost_wait}
     return render(request, template, context)
-
-
 
 
 #  Продажи

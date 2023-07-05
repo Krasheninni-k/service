@@ -9,7 +9,7 @@ class BaseModel(models.Model):
     created_by = models.ForeignKey(
         User, on_delete=models.CASCADE,
         verbose_name='Автор записи')
-    is_published = models.BooleanField(default=True)
+    is_published = models.BooleanField('Опубликовано', default=True)
 
     class Meta:
         abstract = True
@@ -17,6 +17,7 @@ class BaseModel(models.Model):
 
 class Catalog(BaseModel):
     title = models.CharField('Название', max_length=256)
+    description = models.TextField('Описание', blank=True)
     price_RUB = models.DecimalField(
         'Цена по прайсу, руб.', max_digits=9, decimal_places=2,
         null=True, blank=True, default=0)
@@ -26,19 +27,19 @@ class Catalog(BaseModel):
     market_price_RUB = models.DecimalField(
         'Рыночная цена, руб.', max_digits=9, decimal_places=2,
         null=True, blank=True, default=0)
+    image = models.ImageField('Фото', upload_to='app_images', blank=True)
     length = models.DecimalField(
-        'Длина в см', max_digits=5, decimal_places=2,
+        'Длина в см', max_digits=4, decimal_places=1,
         null=True, blank=True, default=0)
     width = models.DecimalField(
-        'Ширина в см', max_digits=5, decimal_places=2,
+        'Ширина в см', max_digits=4, decimal_places=1,
         null=True, blank=True, default=0)
     height = models.DecimalField(
-        'Высота в см', max_digits=5, decimal_places=2,
+        'Высота в см', max_digits=4, decimal_places=1,
         null=True, blank=True, default=0)
     weight = models.DecimalField(
-        'Вес в кг', max_digits=4, decimal_places=2,
+        'Вес в кг', max_digits=5, decimal_places=3,
         null=True, blank=True, default=0)
-    image = models.ImageField('Фото', upload_to='app_images', blank=True)
 
     class Meta:
         verbose_name = 'Каталог товаров'
@@ -138,6 +139,45 @@ class OrderDetail(BaseModel):
         null=True, blank=True, default=0)
 
 
+class Sales(BaseModel):
+    sale_number = models.IntegerField('Номер продажи',  default=0)
+    sale_date = models.DateTimeField('Дата продажи', blank=True)
+    quantity = models.IntegerField('Количество наименований товаров',  default=1)
+    product_list = models.TextField('Cостав продажи', blank=True)
+    total_cost = models.DecimalField(
+        'Цена проджаи', max_digits=8, decimal_places=2,
+        null=True, blank=True, default=0)
+    comment = models.CharField('Комментарий', max_length=256)
+    payment_type = models.ForeignKey(
+        Payment_type,
+        on_delete=models.SET_NULL,
+        related_name='goods',
+        verbose_name='Способ оплаты',
+        null=True, blank=True)
+    client_type = models.ForeignKey(
+        Client_type,
+        on_delete=models.SET_NULL,
+        related_name='goods',
+        verbose_name='Тип покупателя',
+        null=True, blank=True)
+    receiving_type = models.ForeignKey(
+        Receiving_type,
+        on_delete=models.SET_NULL,
+        related_name='goods',
+        verbose_name='Тип получения',
+        null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Продажа'
+        verbose_name_plural = 'Продажи'
+        ordering = ['-sale_number']
+        constraints = (models.UniqueConstraint(
+            fields=('sale_number',), name='Unique sale_number',),)
+
+    def __str__(self):
+        date = self.sale_date.strftime('%Y-%m-%d')
+        return f'{self.sale_number} - {date} - {self.product_list}'
+
 class Goods(BaseModel):
     order_number = models.ForeignKey(
         Orders,
@@ -171,8 +211,12 @@ class Goods(BaseModel):
         related_name='goods_cost_price_RUB',
         verbose_name='Себестоимость в рублях',
         null=True, blank=True)
-    sale_date = models.DateTimeField('Дата продажи', null=True, blank=True)
-    sold = models.BooleanField('Продано', default=False)
+    sale_date = models.ForeignKey(
+        Sales,
+        on_delete=models.SET_NULL,
+        related_name='goods_cost_price_RUB',
+        verbose_name='Себестоимость в рублях',
+        null=True, blank=True)
     selling_price_RUB = models.DecimalField(
         'Цена продажи в руб.', max_digits=9, decimal_places=2,
         null=True, blank=True)
@@ -204,8 +248,6 @@ class Goods(BaseModel):
         return self.product
 
 
-class ForStock(models.Model):
-    title = models.CharField('Название товара', max_length=256)
 """
 
 User = get_user_model()
