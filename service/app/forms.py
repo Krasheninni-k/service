@@ -3,8 +3,9 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .models import Orders, Goods, Payment_type, OrderDetail, Catalog
-from .utils import max_value
+from .models import (Orders, OrderDetail, Catalog, Sales, SaleDetail,
+                      Client_type, Payment_type, Receiving_type, CustomSettings)
+from .utils import max_value, max_value_sale
 
 
 class OrderForm(forms.ModelForm):
@@ -37,7 +38,8 @@ class OrderDetailForm(forms.ModelForm):
 
     class Meta:
         model = OrderDetail
-        fields = ('product', 'cost_price_RUB', 'quantity', 'ordering_price_RMB')
+        fields = (
+            'product', 'cost_price_RUB', 'quantity', 'ordering_price_RMB')
         widgets = {
             'cost_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
             'ordering_price_RMB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
@@ -73,8 +75,9 @@ class EditDeleteOrderForm(forms.ModelForm):
     def clean_received_date(self):
         received_date = self.cleaned_data['received_date']
         current_date = timezone.now().date()
-        if received_date.date() > current_date:
-            raise ValidationError("Нельзя указывать дату в будущем.")
+        if received_date is not None:
+            if received_date.date() > current_date:
+                raise ValidationError("Нельзя указывать дату в будущем.")
         return received_date
 
     def clean_order_date(self):
@@ -112,30 +115,77 @@ class CatalogForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'cols': '40', 'rows': '3'})}
 
 
-class SaleForm(forms.Form):
-    number = forms.IntegerField(
-        label="Номер продажи",
-        help_text='Укажите номер продажи'
-        )
-    sale_date = forms.DateField(
-        label='Дата продажи',
-        help_text='Укажите дату продажи'
-        )
-    quantity = forms.IntegerField(
-        label='Количество',
-        help_text='Укажите количество наименований товара'
-        )
-    payment_type = forms.ModelChoiceField(
-        queryset=Payment_type.objects.all(),
-        label='Способ оплаты',
-        help_text='Выберите способ оплаты'
-        )
+class SaleForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(SaleForm, self).__init__(*args, **kwargs)
+        max_sale_number = max_value_sale()
+        initial = date.today().strftime("%d.%m.%Y")
+        self.fields['sale_number'].initial = max_sale_number + 1
+        self.fields['sale_number'].help_text = f'Номер последней продажи - { max_sale_number }'
+        self.fields['sale_date'].initial = initial
+        self.fields['sale_date'].help_text = f'Сегодня - { initial }'
+        self.fields['client_type'].initial = Client_type.objects.first()
+        self.fields['payment_type'].initial = Payment_type.objects.first()
+        self.fields['receiving_type'].initial = Receiving_type.objects.first()
+        self.fields['comment'].help_text = 'Укажите имя и контакты покупателя, а также любую другую полезную информацию'
+
+    def clean(self):
+        super().clean()
+
+    def clean_order_date(self):
+        sale_date = self.cleaned_data.get('sale_date')
+        current_date = timezone.now().date()
+        if sale_date.date() > current_date:
+            raise ValidationError("Нельзя указывать дату в будущем.")
+        return sale_date
+
+    class Meta:
+        model = Sales
+        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price')
+        widgets = {
+            'comment': forms.Textarea(attrs={'cols': '40', 'rows': '3'})}
 
 
 class SaleDetailForm(forms.ModelForm):
 
     class Meta:
-        model = Goods
-        fields = ('product', 'selling_price_RUB',)
+        model = SaleDetail
+        fields = ('product', 'quantity', 'sale_price_RUB')
         widgets = {
-            'selling_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
+            'sale_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
+
+
+class SaleEditDeleteForm(forms.ModelForm):
+
+    def clean(self):
+        super().clean()
+
+    def clean_order_date(self):
+        sale_date = self.cleaned_data['sale_date']
+        current_date = timezone.now().date()
+        if sale_date.date() > current_date:
+            raise ValidationError("Нельзя указывать дату в будущем.")
+        return sale_date
+
+    class Meta:
+        model = Sales
+        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'quantity')
+        widgets = {
+            'sale_date': forms.DateInput(attrs={'format': '%d.%m.%Y'})}
+
+
+class SaleEditDetailForm(forms.ModelForm):
+
+    class Meta:
+        model = SaleDetail
+        fields = ('product', 'sale_price_RUB')
+        widgets = {
+            'sale_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
+        
+
+class CustomSettingsForm(forms.ModelForm):
+   
+   class Meta:
+        model = CustomSettings
+        fields = '__all__'

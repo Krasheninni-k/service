@@ -2,22 +2,25 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.db.models import Count
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import CreateView, UpdateView, DeleteView, DetailView
+from django.views.generic import DetailView, UpdateView
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from datetime import datetime
-from django.db.models import F, Sum, Q, Case, When, IntegerField
+from django.db.models import F, Sum, Q
 
-from app.models import Orders, Goods, Catalog, OrderDetail
+from app.models import (Orders, Goods, Catalog, OrderDetail, Sales, SaleDetail,
+                         Payment_type, Client_type, Receiving_type, CustomSettings)
 
 from app.forms import (OrderForm, OrderDetailForm, SaleForm, SaleDetailForm,
                         ReceivedForm, EditDeleteOrderForm, EditOrderDetailForm,
-                        CatalogForm)
+                        CatalogForm, SaleEditDeleteForm, SaleEditDetailForm,
+                        CustomSettingsForm)
 
-from app.utils import create_goods, change_product_list
+from app.utils import (create_goods, update_goods,
+                       change_order_detail_fields, change_sale_detail_fields,
+                       change_order_days_in_stock, change_sale_days_in_stock)
 
 current_time = timezone.now()
 User = get_user_model()
@@ -37,7 +40,7 @@ def add_order_detail(request):
     template = 'app/add_order_detail.html'
     forms = []
     product_list = []
-    
+
     if request.method == 'POST':
         for i in range(quantity_name):
             form = OrderDetailForm(request.POST, prefix=f'form_{i+1}')
@@ -79,7 +82,7 @@ def add_order_detail(request):
         for i in range(quantity_name):
             form = OrderDetailForm(prefix=f'form_{i+1}')
             forms.append(form)
-    
+
     context = {'forms': forms}
     return render(request, template, context)
 
@@ -91,8 +94,7 @@ def add_order(request):
     context = {'form': form}
     if form.is_valid():
         quantity = form.cleaned_data['quantity']
-        order_date = form.cleaned_data['order_date']
-        order_date = order_date.date()
+        order_date = form.cleaned_data['order_date'].date()
         order_number = form.cleaned_data['order_number']
         redirect_url = reverse(
             'app:add_order_detail') + f'?quantity={quantity}&order_date={order_date}&order_number={order_number}'
@@ -111,6 +113,7 @@ def orders_list(request):
     context = {'page_obj': page_obj}
     return render(request, template, context)
 
+
 @login_required
 def order_detail(request, pk):
     template = 'app/order_detail.html'
@@ -118,6 +121,7 @@ def order_detail(request, pk):
         is_published=True,
         order_number_id__order_number=pk).select_related('product').values(
         'order_number_id__order_number',
+        'received_date_id__received_date',
           'order_date_id__order_date',
           'quantity',
           'id',
@@ -139,6 +143,7 @@ def delete_order(request, pk):
         return redirect('app:orders_list')
     return render(request, template, context)
 
+
 @login_required
 def edit_order(request, pk):
     template = 'app/edit_delete_order.html'
@@ -147,12 +152,14 @@ def edit_order(request, pk):
         form = EditDeleteOrderForm(request.POST, instance=instance)
         if form.is_valid():
             form.save()
+            change_order_days_in_stock(instance)
             return redirect('app:orders_list')
     else:
         form = EditDeleteOrderForm(instance=instance)
 
     context = {'form': form}
     return render(request, template, context)
+
 
 @login_required
 def edit_order_detail(request, **kwargs):
@@ -165,7 +172,7 @@ def edit_order_detail(request, **kwargs):
         form = EditOrderDetailForm(request.POST, instance=instance)
         if form.is_valid():
             form.save()
-            change_product_list(instance)
+            change_order_detail_fields(instance)
             return redirect('app:order_detail', pk=order_number)
     return render(request, template, context)
 
@@ -184,6 +191,7 @@ def received_order(request, pk):
             return HttpResponseRedirect(redirect_url)
     return render(request, template, context)
 
+
 # Каталог
 @login_required
 def catalog(request):
@@ -191,7 +199,8 @@ def catalog(request):
     catalog = Catalog.objects.select_related('created_by').filter(
         is_published=True).annotate(
         count_stock=Count('order_detail__goods',
-                      filter=Q(order_detail__goods__received_date__received_date__isnull=False)),
+                      filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                             Q(order_detail__goods__sale_date__sale_date__isnull=True))),
         count_wait=Count('order_detail__goods',
                       filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('title')[:100]
     paginator = Paginator(catalog, 10)
@@ -199,6 +208,7 @@ def catalog(request):
     page_obj = paginator.get_page(page_number)
     context = {'page_obj': page_obj}
     return render(request, template, context)
+
 
 @login_required
 def catalog_add(request):
@@ -213,23 +223,39 @@ def catalog_add(request):
         return redirect('app:catalog')
     return render(request, template, context)
 
+
 @login_required
 def catalog_detail(request, pk):
     template = 'app/catalog_detail.html'
     product = get_object_or_404(Catalog, pk=pk)
     product_count_stock = Goods.objects.filter(
-        Q(received_date__received_date__isnull=False), product__product=pk).values('id').count()
+        Q(received_date__received_date__isnull=False),
+          Q(sale_date__sale_date__isnull=True),
+            product__product=pk).values('id').count()
     product_count_wait = Goods.objects.filter(
         Q(received_date__received_date__isnull=True), product__product=pk).values('id').count()
     order_list = OrderDetail.objects.filter(
         product=pk).values('order_number__order_number',
                            'order_date__order_date',
                            'received_date__received_date',
-                           'quantity', 'cost_price_RUB', 'ordering_price_RMB').order_by('order_number')
-    context = {'product': product, 'order_list': order_list,
+                           'quantity', 'cost_price_RUB', 'ordering_price_RMB').order_by('order_number')[:20]
+    sale_list = Goods.objects.filter(
+        product__product=pk, sale_date__sale_date__isnull=False).values(
+        'margin',
+        'markup',
+        'days_in_stock',
+        'received_date__received_date',
+        'sale_price_RUB__sale_price_RUB',
+        'cost_price_RUB__cost_price_RUB',
+        'sale_date__sale_date').order_by('sale_date')
+    paginator = Paginator(sale_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {'product': product, 'page_obj': page_obj, 'order_list': order_list,
                'product_count_stock': product_count_stock,
                'product_count_wait': product_count_wait}
     return render(request, template, context)
+
 
 @login_required
 def catalog_edit(request, pk):
@@ -262,75 +288,126 @@ def stock_list(request):
     stock_list = Catalog.objects.filter(
     order_detail__goods__isnull=False).annotate(
     count_stock=Count('order_detail__goods',
-                      filter=Q(order_detail__goods__received_date__received_date__isnull=False)),
+                      filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                            Q(order_detail__goods__sale_date__sale_date__isnull=True))),
     count_wait=Count('order_detail__goods',
-                      filter=Q(order_detail__goods__received_date__received_date__isnull=True)),                  
+                      filter=Q(order_detail__goods__received_date__received_date__isnull=True)),
     cost_stock=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
-                 filter=Q(order_detail__goods__received_date__received_date__isnull=False)),
+                 filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                            Q(order_detail__goods__sale_date__sale_date__isnull=True))),
     cost_wait=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
                  filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('-count_stock')
-    total_count_stock = Goods.objects.filter(Q(received_date__received_date__isnull=False)).values('id').count()
-    total_count_wait = Goods.objects.filter(Q(received_date__received_date__isnull=True)).values('id').count()
-    
+    total_count_stock = Goods.objects.filter(
+        Q(received_date__received_date__isnull=False) &
+        Q(sale_date__sale_date__isnull=True)).values('id').count()
+    total_count_wait = Goods.objects.filter(
+        Q(received_date__received_date__isnull=True)).values('id').count()
     total_list = Goods.objects.filter(
         is_published=True).annotate(
-        cost_stock=Sum('cost_price_RUB__cost_price_RUB', filter=Q(received_date__received_date__isnull=False)),
-        cost_wait=Sum('cost_price_RUB__cost_price_RUB', filter=Q(received_date__received_date__isnull=True)))
-    total_cost_stock = total_list.aggregate(total_cost_stock=Sum('cost_stock'))['total_cost_stock']
-    total_cost_wait = total_list.aggregate(total_cost_wait=Sum('cost_wait'))['total_cost_wait']
+        cost_stock=Sum('cost_price_RUB__cost_price_RUB', filter=(
+            Q(received_date__received_date__isnull=False) &
+            Q(sale_date__sale_date__isnull=True))),
+        cost_wait=Sum('cost_price_RUB__cost_price_RUB', filter=(
+            Q(received_date__received_date__isnull=True))))
+    total_cost_stock = total_list.aggregate(
+        total_cost_stock=Sum('cost_stock'))['total_cost_stock']
+    total_cost_wait = total_list.aggregate(
+        total_cost_wait=Sum('cost_wait'))['total_cost_wait']
     context = {'stock_list': stock_list,
-               'total_count_stock': total_count_stock, 'total_cost_stock': total_cost_stock,
-               'total_count_wait': total_count_wait, 'total_cost_wait': total_cost_wait}
+               'total_count_stock': total_count_stock,
+               'total_cost_stock': total_cost_stock,
+               'total_count_wait': total_count_wait,
+               'total_cost_wait': total_cost_wait}
     return render(request, template, context)
 
 
 #  Продажи
 @login_required
-def add_sale_detail(request):
-    number = request.GET.get('number')
-    sale_date_str = request.GET.get('sale_date')
-    sale_date = datetime.strptime(sale_date_str, '%Y-%m-%d').date()
+def sale_detail_add(request):
+    sale_number = request.GET.get('sale_number')
+    sale_date = request.GET.get('sale_date')
+    client_name = request.GET.get('client_name')
     quantity_name = int(request.GET.get('quantity'))
-    payment_type = int(request.GET.get('payment_type'))
-
-    template = 'app/add_sale_detail.html'
+    payment_type = Payment_type.objects.get(
+        id=int(request.GET.get('payment_type')))
+    client_type = Client_type.objects.get(
+        id=int(request.GET.get('client_type')))
+    receiving_type = Receiving_type.objects.get(
+        id=int(request.GET.get('receiving_type')))
+    template = 'app/sale_detail_add.html'
     forms = []
-    
+    product_list = []
+
     if request.method == 'POST':
         for i in range(quantity_name):
             form = SaleDetailForm(request.POST, prefix=f'form_{i+1}')
             forms.append(form)
         if all(form.is_valid() for form in forms):
-            for form in forms:
-                sale = form.save(commit=False)
-                sale.created_by = request.user
-                sale.number = number
-                sale.sale_date = sale_date
-                sale.payment_type = payment_type
-                sale.sold = True
+            sale = Sales.objects.create(
+                sale_number=sale_number,
+                created_by=request.user,
+                sale_date=datetime.strptime(sale_date, "%Y-%m-%d"),
+                quantity=quantity_name,
+                payment_type=payment_type,
+                client_type=client_type,
+                receiving_type=receiving_type,
+                client_name=client_name
+            )
+            for i in range(quantity_name):
+                quantity = int(request.POST.get(
+                    'form_' + str(i+1) + '-quantity'))
+                product = Catalog.objects.get(
+                    id=int(request.POST.get('form_' + str(i+1) + '-product')))
+                sale_detail = SaleDetail.objects.create(
+                    sale_number=Sales.objects.get(id=sale.id),
+                    sale_date=Sales.objects.get(id=sale.id),
+                    created_by=request.user,
+                    product=product,
+                    quantity=quantity,
+                    sale_price_RUB=request.POST.get(
+                        'form_' + str(i+1) + '-sale_price_RUB')
+                )
+                sale_detail.save()
+                product_list.append(f'{product} - {quantity} ед.')
+                sale.product_list = ', '.join(
+                    str(item) for item in product_list)
                 sale.save()
+                update_goods(sale_detail, quantity)
+            total_price = SaleDetail.objects.filter(
+                sale_number=sale.id).aggregate(
+                total_price=Sum(
+                    F('quantity') * F('sale_price_RUB')))['total_price']
+            sale.total_price = total_price
+            sale.save()
             return redirect('app:sales_list')
     else:
         for i in range(quantity_name):
             form = SaleDetailForm(prefix=f'form_{i+1}')
             forms.append(form)
-    
+
     context = {'forms': forms}
     return render(request, template, context)
 
 
 @login_required
-def add_sale(request):
-    template = 'app/add_sale.html'
+def sale_add(request):
+    template = 'app/sale_add.html'
     form = SaleForm(request.POST or None)
     context = {'form': form}
     if form.is_valid():
-        number = form.cleaned_data['number']
-        sale_date = form.cleaned_data['sale_date']
+        sale_number = form.cleaned_data['sale_number']
+        sale_date = form.cleaned_data['sale_date'].date()
         quantity = form.cleaned_data['quantity']
         payment_type = form.cleaned_data['payment_type'].id
-        redirect_url = reverse(
-            'app:add_sale_detail') + f'?number={number}&sale_date={sale_date}&quantity={quantity}&payment_type={payment_type}'
+        client_type = form.cleaned_data['client_type'].id
+        receiving_type = form.cleaned_data['receiving_type'].id
+        client_name = form.cleaned_data['client_name']
+        redirect_url = (
+            reverse('app:sale_detail_add') +
+            f'?sale_number={sale_number}&sale_date={sale_date}'
+            f'&quantity={quantity}&payment_type={payment_type}'
+            f'&client_type={client_type}&receiving_type={receiving_type}'
+            f'&client_name={client_name}')
         return HttpResponseRedirect(redirect_url)
     return render(request, template, context)
 
@@ -338,49 +415,96 @@ def add_sale(request):
 @login_required
 def sales_list(request):
     template = 'app/sales_list.html'
-    sales_list = Goods.objects.select_related(
-        'order_number', 'order_date', 'received_date', 'product', 'product__product',
-          'ordering_price_RMB', 'cost_price_RUB', 'created_by').filter(
-        is_published=True)[:100]
-    context = {'sales_list': sales_list}
+    sales_list = Sales.objects.select_related(
+        'created_by', 'payment_type', 'receiving_type', 'client_type').filter(
+        is_published=True)
+    paginator = Paginator(sales_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {'page_obj': page_obj}
     return render(request, template, context)
 
-"""
- count_stock=Case(
-            When(order_detail__goods__received_date__exact=None,
-                 then=Count('order_detail__goods')),
-            default=0,
-            output_field=IntegerField()
-        )
 
-queryset = MyModel.objects.annotate(
-    new_field=Case(
-        When(some_condition=True, then=Value(1)),
-        When(some_other_condition=False, then=Value(2)),
-        default=Value(3),
-        output_field=IntegerField()
-    )
-)
+@login_required
+def sale_detail(request, pk):
+    template = 'app/sale_detail.html'
+    sale_info_detail = SaleDetail.objects.filter(
+        is_published=True,
+        sale_number_id__sale_number=pk).select_related('product').values(
+        'sale_number_id__sale_number',
+        'sale_date_id__sale_date',
+        'quantity',
+        'id',
+        'product__title',
+        'sale_price_RUB')
+    sale_info = get_object_or_404(Sales, sale_number=pk)
+    context = {'sale_info': sale_info, 'sale_info_detail': sale_info_detail}
+    return render(request, template, context)
 
-    ForStock.objects.all().delete()
-    stock_list = Goods.objects.filter(
-        received_date__received_date__isnull=False)
-    for_stock_objs = [
-        ForStock(title=stock.product.product.title) for stock in stock_list]
-    ForStock.objects.bulk_create(for_stock_objs)
-    for_stock_list = ForStock.objects.values('title').annotate(count=Count('title'))
-"""
 
-"""
-    stock_list = stock_list.filter(
-        order_detail__goods__isnull=False).annotate(
-        count=Count('order_detail__goods')).order_by()
-    
-    wait_list = Goods.objects.filter(received_date=None)
-    wait_list = wait_list.filter(
-        order_detail__goods__isnull=False).annotate(
-        count=Count('order_detail__goods')).order_by()
-    """
+@login_required
+def sale_delete(request, pk):
+    template = 'app/sale_edit_delete.html'
+    instance = get_object_or_404(Sales, sale_number=pk)
+    form = SaleEditDeleteForm(instance=instance)
+    context = {'form': form}
+    if request.method == 'POST':
+        instance.delete()
+        return redirect('app:sales_list')
+    return render(request, template, context)
+
+
+@login_required
+def sale_edit(request, pk):
+    template = 'app/sale_edit_delete.html'
+    instance = get_object_or_404(Sales, sale_number=pk)
+    if request.method == 'POST':
+        form = SaleEditDeleteForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            change_sale_days_in_stock(instance)
+            return redirect('app:sales_list')
+    else:
+        form = SaleEditDeleteForm(instance=instance)
+
+    context = {'form': form}
+    return render(request, template, context)
+
+
+@login_required
+def sale_detail_edit(request, **kwargs):
+    template = 'app/sale_edit_detail.html'
+    instance = get_object_or_404(SaleDetail, pk=kwargs['pk'])
+    sale_number = instance.sale_number.sale_number
+    form = SaleEditDetailForm(instance=instance)
+    context = {'form': form}
+    if request.method == 'POST':
+        form = SaleEditDetailForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            change_sale_detail_fields(instance)
+            return redirect('app:sale_detail', pk=sale_number)
+    return render(request, template, context)
+
+
+@login_required
+def goods_list(request):
+    template = 'app/goods_list.html'
+    goods_list = Goods.objects.select_related(
+        'order_number', 'order_date', 'received_date',
+        'product', 'product__product',
+        'ordering_price_RMB', 'cost_price_RUB', 'created_by').filter(
+        is_published=True).values(
+        'order_number__order_number', 'order_date__order_date',
+        'received_date__received_date', 'cost_price_RUB__cost_price_RUB',
+        'product__product__title', 'sale_date__sale_date',
+        'sale_price_RUB__sale_price_RUB').order_by('order_number')
+    paginator = Paginator(goods_list, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {'page_obj': page_obj}
+    return render(request, template, context)
+
 
 # Профили
 class UserDetailView(DetailView):
@@ -393,142 +517,18 @@ class UserDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['profile'] = self.get_object()
         context['username'] = self.request.user.username
+        settings = CustomSettings.objects.first()
+        context['settings'] = settings
         return context
-
-"""
-@login_required
-def add_order_detail(request):
-    number = int(request.GET.get('number'))
-    quantity_name = int(request.GET.get('quantity'))
-    order_date_str = request.GET.get('order_date')
-    order_date = datetime.strptime(order_date_str, '%Y-%m-%d').date()
-    template = 'app/add_order_detail.html'
-    forms = []
     
-    if request.method == 'POST':
-        for i in range(quantity_name):
-            form = OrderDetailForm(request.POST, prefix=f'form_{i+1}')
-            forms.append(form)
-        if all(form.is_valid() for form in forms):
-            for form in forms:
-                order = form.save(commit=False)
-                order.created_by = request.user
-                order.order_date = order_date
-                order.number = number
-                order.save()
-                create_goods(
-                    order.created_by,
-                    order.number,
-                    order.order_date,
-                    order.product,
-                    order.cost_price_RUB,
-                    order.quantity)
-            return redirect('app:orders_list')
-    else:
-        for i in range(quantity_name):
-            form = OrderDetailForm(prefix=f'form_{i+1}')
-            forms.append(form)
-    
-    context = {'forms': forms}
-    return render(request, template, context)
-
-
-class PostCreateView(LoginRequiredMixin, CreateView):
-    model = Orders
-    form_class = OrderForm
-    template_name = 'blog/create.html'
-
-    def get_success_url(self):
-        return reverse('blog:profile',
-                       kwargs={'username': self.request.user.username})
-
-    def form_valid(self, form):
-        form.instance.author = self.request.user
-        return super().form_valid(form)
-
-
-class PostUpdateView(LoginRequiredMixin, UpdateView):
-    model = Post
-    form_class = PostForm
-    template_name = 'blog/create.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Post, pk=kwargs['pk'])
-        if instance.author != request.user:
-            return redirect('blog:post_detail', pk=kwargs['pk'])
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_success_url(self, **kwargs):
-        return reverse('blog:post_detail', kwargs={'pk': self.object.pk})
-
-
-class PostDeleteView(LoginRequiredMixin, DeleteView):
-    model = Post
-    template_name = 'blog/create.html'
-    success_url = reverse_lazy('blog:index')
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Post, pk=kwargs['pk'])
-        if instance.author != request.user:
-            return redirect('login')
-        return super().dispatch(request, *args, **kwargs)
-
-
-class CommentUpdateView(LoginRequiredMixin, UpdateView):
-    model = Comment
-    form_class = CommentForm
-    template_name = 'blog/comment.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Comment, pk=kwargs['pk'])
-        if instance.author != request.user:
-            return redirect('login')
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_success_url(self):
-        return reverse('blog:post_detail',
-                       kwargs={'pk': self.object.post.pk})
-
-
-class CommentDeleteView(LoginRequiredMixin, DeleteView):
-    model = Comment
-    template_name = 'blog/comment.html'
-    success_url = reverse_lazy('blog:index')
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Comment, pk=kwargs['pk'])
-        if instance.author != request.user:
-            return redirect('login')
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_success_url(self):
-        return reverse('blog:post_detail',
-                       kwargs={'pk': self.object.post.pk})
-
-
-def get_post_list(queryset):
-    post_list = queryset.select_related(
-        'category', 'author').order_by('-pub_date').annotate(
-        comment_count=Count('comments'))
-    return post_list
-
-
-def get_paginated_page(request, queryset):
-    paginator = Paginator(queryset, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    return page_obj
-
-
-
 
 class UserUpdateView(UpdateView):
     model = get_user_model()
     fields = 'first_name', 'last_name', 'email'
-    success_url = reverse_lazy('blog:index')
+    success_url = reverse_lazy('app:index')
     slug_field = 'username'
     slug_url_kwarg = 'username'
-    template_name = 'blog/user.html'
+    template_name = 'app/user.html'
 
     def dispatch(self, request, *args, **kwargs):
         instance = get_object_or_404(get_user_model(), username=request.user)
@@ -537,51 +537,18 @@ class UserUpdateView(UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
-        return reverse('blog:profile',
+        return reverse('app:profile',
                        kwargs={'username': self.request.user.username})
-
-
-def post_detail(request, pk):
-    template = 'blog/detail.html'
-    post = get_object_or_404(Post.objects.filter(
-        is_published=True,
-        category__is_published=True,
-        pub_date__date__lte=current_time),
-        pk=pk
-    )
-    context = {'post': post}
-    context['form'] = CommentForm()
-    context['comments'] = post.comments.select_related(
-        'post').order_by('created_at')
-    return render(request, template, context)
-
-
-def category_posts(request, category_slug):
-    template = 'blog/category.html'
-    category = get_object_or_404(
-        Category,
-        slug=category_slug,
-        is_published=True
-    )
-    post_list = get_post_list(Post.objects.filter(
-        category=category,
-        is_published=True,
-        category__is_published=True,
-        pub_date__date__lte=current_time))
-    page_obj = get_paginated_page(request, post_list)
-    context = {'post_list': post_list,
-               'category': category, 'page_obj': page_obj}
-    return render(request, template, context)
-
+    
 
 @login_required
-def add_comment(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    form = CommentForm(request.POST)
-    if form.is_valid():
-        comment = form.save(commit=False)
-        comment.author = request.user
-        comment.post = post
-        comment.save()
-    return redirect('blog:post_detail', pk=pk)
-"""
+def settings_edit(request):
+    template = 'app/settings_edit.html'
+    settings = CustomSettings.objects.get_or_create(pk=1)[0]
+    form = CustomSettingsForm(request.POST or None, instance=settings)
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            return redirect('app:profile', username=request.user.username)
+    context = {'form': form}
+    return render(request, template, context)

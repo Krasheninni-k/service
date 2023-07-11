@@ -27,9 +27,9 @@
               <td>{{ catalog.title }}</td>
               <td>{{ catalog.count_stock }}</td>
               <td>{{ catalog.count_wait }}</td>
-              <td>{{ catalog.price_RUB }}</td>
+              <td>{{ catalog.price_RUB|floatformat:-2 }}</td>
               <td></td>
-              <td>{% if catalog.market_price_RUB %} {{ catalog.market_price_RUB }} {% endif %}</td>
+              <td>{% if catalog.market_price_RUB %} {{ catalog.market_price_RUB|floatformat:-2 }} {% endif %}</td>
               <td>
                 <a class="btn btn-sm text-muted" href="{% url 'app:catalog_detail' catalog.id %}" role="button">
                   Детали

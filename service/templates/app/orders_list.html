@@ -13,11 +13,11 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Номер</th>
+            <th>№</th>
             <th style="width: 100px;">Оплачено</th>
-            <th>Количество</th>
-            <th>Состав закупки</th>
-            <th>Себестоимость</th>
+            <th>Кол-во</th>
+            <th style="width: 300px;">Состав закупки</th>
+            <th>Себест.</th>
             <th style="width: 100px;">Получено</th>
           </tr>
         </thead>
@@ -28,7 +28,7 @@
               <td>{{ order.order_date|date:"d-m-Y" }}</td>
               <td>{{ order.quantity }}</td>
               <td>{{ order.product_list }}</td>
-              <td>{{ order.total_cost }}</td>
+              <td>{{ order.total_cost|floatformat:-2 }}</td>
               <td>{% if  order.received_date %} {{ order.received_date|date:"d-m-Y" }} 
                 {% else %} 
                 <a class="btn btn-sm text-muted" href="{% url 'app:order_received' order.order_number %}" role="button">

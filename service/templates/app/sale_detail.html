@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}
+Детали продажи
+{% endblock %}
+{% block content %}
+<div class="col d-flex justify-content-center">
+  <div class="card" style="width: 60rem;">
+    <div class="card-header d-flex justify-content-between">
+      <span class="text-left">
+        Продажа № {{ sale_info.sale_number }} от {{ sale_info.sale_date|date:"d E Y" }}:
+        <br><b>{{ sale_info.total_price|floatformat:-2 }} руб.</b>
+      </span>
+      <span>
+        <a class="btn btn-sm text-muted" 
+        href="{% url 'app:sale_edit' sale_info.sale_number %}" 
+        role="button">Редактировать</a>
+        <a class="btn btn-sm text-muted"
+        href="{% url 'app:sale_delete' sale_info.sale_number %}"
+        role="button">Удалить продажу</a>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="card-subtitle mb-2 text-muted">
+            <small>
+            Имя покупателя: {{ sale_info.client_name }}<br>
+            Тип: {{ sale_info.client_type }}<br>
+            Оплата: {{ sale_info.payment_type }}<br>
+            Получение: {{ sale_info.receiving_type }}
+            </small>
+          </h6>
+        </div>
+        <div class="col-md-6">
+          <h6 class="card-subtitle mb-2 text-muted">
+            <small>
+              Комментарий: {{ sale_info.comment }}
+            </small>
+          </h6>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Продукт</th>
+            <th>Количество</th>
+            <th>Цена продажи</th>
+            <th>Себестоимость</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody> 
+          {% for i in sale_info_detail %}
+            <tr>
+              <td>{{ i.product__title }}</td>
+              <td>{{ i.quantity }}</td>
+              <td>{{ i.sale_price_RUB }}</td>
+              <td></td>
+              <td><a class="btn btn-sm text-muted" href="{% url 'app:sale_detail_edit' i.sale_number_id__sale_number i.id %}" role="button">
+                Редактировать
+              </a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

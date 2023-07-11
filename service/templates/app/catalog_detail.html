@@ -17,9 +17,10 @@
             <h6 class="card-subtitle mb-2 text-muted">
               <small>{% if product.description %} {{ product.description }} {% else %} Нет описания {% endif %}</td></small>
             </h6>
-            <p class="card-text">Прайс: {{ product.price_RUB|linebreaksbr }}</p>
-            <p class="card-text">Расчет: {{ product.target_price_RUB|linebreaksbr }}</p>
-            <p class="card-text">Рынок: {{ product.market_price_RUB|linebreaksbr }}</p>
+            <p class="card-text">Прайс: {{ product.price_RUB|floatformat:-2|linebreaksbr }}</p>
+            <p class="card-text">Рынок: {{ product.market_price_RUB|floatformat:-2|linebreaksbr }}</p>
+            <p class="card-text">Расчет от закупки: {{ product.target_price_RUB|floatformat:-2|linebreaksbr }}<br>
+            Расчет от курса: {{ product.target_price_RUB|floatformat:-2|linebreaksbr }}</p>
             <div class="mb-2">
               <a class="btn btn-sm text-muted" href="{% url 'app:catalog_edit' product.id %}" role="button">Редактировать</a>
               <a class="btn btn-sm text-muted" href="{% url 'app:catalog_delete' product.id %}" role="button">Удалить</a>
@@ -69,8 +70,8 @@
                     <td class="small-font">{{ i.order_date__order_date|date:"d-m-Y" }}</td>
                     <td class="small-font">{{ i.received_date__received_date|date:"d-m-Y" }}</td>
                     <td class="small-font">{{ i.quantity }}</td>
-                    <td class="small-font">{{ i.ordering_price_RMB }}</td>
-                    <td class="small-font">{{ i.cost_price_RUB }}</td>
+                    <td class="small-font">{{ i.ordering_price_RMB|floatformat:-2 }}</td>
+                    <td class="small-font">{{ i.cost_price_RUB|floatformat:-2 }}</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -78,6 +79,35 @@
           </div>
           <div class="col-md-6">
             <h5 class="card-title">Список продаж</h5>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th class="small-font" style="width: 80px;">Получен</th>
+                  <th class="small-font" style="width: 80px;">Продан</th>
+                  <th class="small-font">Себест</th>
+                  <th class="small-font">Продажа</th>
+                  <th class="small-font">Дни</th>
+                  <th class="small-font">Маржа</th>
+                  <th class="small-font">Наценка</th>
+                </tr>
+              </thead>
+              <tbody> 
+                {% for i in page_obj %}
+                  <tr>
+                    <td class="small-font">{{ i.received_date__received_date|date:"d-m-Y" }}</td>
+                    <td class="small-font">{{ i.sale_date__sale_date|date:"d-m-Y" }}</td>
+                    <td class="small-font">{{ i.cost_price_RUB__cost_price_RUB|floatformat:-2 }}</td>
+                    <td class="small-font">{{ i.sale_price_RUB__sale_price_RUB|floatformat:-2 }}</td>
+                    <td class="small-font">{{ i.days_in_stock }}</td>
+                    <td class="small-font">{{ i.margin|floatformat:-2 }}</td>
+                    <td class="small-font">{{ i.markup }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="small-font">
+              {% include "includes/paginator.html" %}
+            </div>
           </div>
         </div>
       </div>

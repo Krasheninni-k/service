@@ -1,39 +1,44 @@
 {% extends "base.html" %}
 {% block title %}
-Список товаров
+Продажи
 {% endblock %}
 {% block content %}
   <div class="col d-flex justify-content-center">
     <div class="card" style="width: 60rem;">
-      <div class="card-header">
-        Список товаров
+      <div class="card-header d-flex justify-content-between">
+        <span>Список продаж:</span>
+        <a class="btn btn-primary" href="{% url 'app:sale_add' %}" role="button">Новая продажа</a>
       </div>
       <div class="card-body">
         <table class="table">
           <thead>
             <tr>
-              <th>Номер</th>
-              <th>Дата закупки</th>
-              <th>Дата получения</th>
-              <th>Продукт</th>
-              <th>Цена в юанях</th>
-              <th>Себестоимость ед.</th>
-              <th>Цена продажи</th>
-
+              <th>№</th>
+              <th style="width: 120px;">Дата</th>
+              <th style="width: 300px;">Состав продажи</th>
+              <th>Сумма сделки</th>
+              <th>Тип клиента</th>
+              <th>Способ оплаты</th>
+              <th>Способ получения</th>
             </tr>
           </thead>
           <tbody> 
-            {% for i in sales_list %}
-              <tr>
-                <td>{{ i.order_number.order_number }}</td>
-                <td>{{ i.order_date.order_date|date:"d-m-Y" }}</td>
-                <td>{{ i.received_date.received_date|date:"d-m-Y" }}</td>
-                <td>{{ i.product.product }}</td>
-                <td>{{ i.ordering_price_RMB.ordering_price_RMB }}</td>
-                <td>{{ i.cost_price_RUB.cost_price_RUB }}</td>
-                <td>{{ i.selling_price_RUB }}</td>
-              </tr>
-            {% endfor %}
+            {% for sale in page_obj %}
+            <tr>
+              <td>{{ sale.sale_number }}</td>
+              <td>{{ sale.sale_date|date:"d-m-Y" }}</td>
+              <td>{{ sale.product_list }}</td>
+              <td>{{ sale.total_price|floatformat:-2 }}</td>
+              <td>{{ sale.client_type }}</td>
+              <td>{{ sale.payment_type }}</td>
+              <td>{{ sale.receiving_type }}</td>
+              <td>
+                <a class="btn btn-sm text-muted" href="{% url 'app:sale_detail' sale.sale_number %}" role="button">
+                  Детали
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
           </tbody>
         </table>
       </div>

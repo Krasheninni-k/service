@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}
+  Список товаров
+{% endblock %}
+{% block content %}
+<div class="col d-flex justify-content-center">
+  <div class="card" style="width: 60rem;">
+    <div class="card-header d-flex justify-content-between">
+      <span>Список товаров:</span>
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>№</th>
+            <th style="width: 250px;">Товар</th>
+            <th style="width: 100px;">Оплачено</th>
+            <th style="width: 100px;">Получено</th>
+            <th style="width: 100px;">Продано</th>
+            <th>Себест.</th>
+            <th>Цена продажи</th>
+          </tr>
+        </thead>
+        <tbody> 
+          {% for i in page_obj %}
+            <tr>
+              <td>{{ i.order_number__order_number }}</td>
+              <td>{{ i.product__product__title }}</td>
+              <td>{{ i.order_date__order_date|date:"d-m-Y" }}</td>
+              <td>{{ i.received_date__received_date|date:"d-m-Y" }}</td>
+              <td>{{ i.sale_date__sale_date|date:"d-m-Y" }}</td>
+              <td>{{ i.cost_price_RUB__cost_price_RUB|floatformat:-2 }}</td>
+              <td>{{ i.sale_price_RUB__sale_price_RUB|floatformat:-2 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% include "includes/paginator.html" %}
+{% endblock %}

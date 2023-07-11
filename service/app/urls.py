@@ -24,7 +24,9 @@ urlpatterns = [
           name='edit_order_detail'),
      path('app/orders/<int:pk>/received/', views.received_order,
           name='order_received'),
-     # Остатки
+     # Товары, Остатки
+     path('app/goods/', views.goods_list,
+          name='goods_list'),
      path('app/goods/stock', views.stock_list,
           name='stock_list'),
      # Каталог
@@ -39,36 +41,26 @@ urlpatterns = [
      path('app/goods/catalog/<int:pk>/delete/', views.catalog_delete,
           name='catalog_delete'),
      # Продажи
-     path('app/add_sale/', views.add_sale,
-          name='add_sale'),
-     path('app/add_sale_detail', views.add_sale_detail,
-          name='add_sale_detail'),
+     path('app/sale_add/', views.sale_add,
+          name='sale_add'),
+     path('app/sale_detail_add/', views.sale_detail_add,
+          name='sale_detail_add'),
      path('app/sales/', views.sales_list,
           name='sales_list'),
+     path('app/sales/<int:pk>/', views.sale_detail,
+          name='sale_detail'),
+     path('app/sales/<int:pk>/delete/', views.sale_delete,
+          name='sale_delete'),
+     path('app/sales/<int:pk>/edit/', views.sale_edit,
+          name='sale_edit'),
+     path('app/sales/<int:sale_number>/edit/<int:pk>', views.sale_detail_edit,
+          name='sale_detail_edit'),
      # Пользователи
      path('profile/<slug:username>/', views.UserDetailView.as_view(),
-          name='profile'), ]
-
-"""
-    path('profile/<slug:username>/edit_profile',
+          name='profile'),
+     path('profile/<slug:username>/edit_profile/',
          views.UserUpdateView.as_view(), name='edit_profile'),
-    path('posts/create/', views.PostCreateView.as_view(),
-         name='create_post'),
-    path('posts/<int:pk>/', views.post_detail,
-         name='post_detail'),
-    path('posts/<int:pk>/edit/', views.PostUpdateView.as_view(),
-         name='edit_post'),
-    path('posts/<int:pk>/delete/', views.PostDeleteView.as_view(),
-         name='delete_post'),
-    path('posts/<int:pk>/comment/', views.add_comment,
-         name='add_comment'),
-    path('posts/<int:post_id>/edit_comment/<int:pk>/',
-         views.CommentUpdateView.as_view(),
-         name='edit_comment'),
-    path('posts/<int:post_id>/delete_comment/<int:pk>/',
-         views.CommentDeleteView.as_view(),
-         name='delete_comment'),
-    path('category/<slug:category_slug>/', views.category_posts,
-         name='category_posts'),
+     # Пользовательские настройки
+     path('app/settings_edit/',
+          views.settings_edit, name='settings_edit'),
 ]
-"""
