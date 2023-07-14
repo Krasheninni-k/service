@@ -2,9 +2,22 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Max, Sum, F
 
-from app.models import Goods, Orders, OrderDetail, Catalog, Sales, SaleDetail
+from app.models import Goods, Orders, OrderDetail, Catalog, Sales, SaleDetail, CustomSettings
 
 User = get_user_model()
+
+markup_obj = CustomSettings.objects.last()
+markup_dict = {
+    (0, 2000): markup_obj.markup_0,
+    (2000, 4000): markup_obj.markup_2,
+    (4000, 8000): markup_obj.markup_4,
+    (8000, 16000): markup_obj.markup_8,
+    (16000, 32000): markup_obj.markup_16,
+    (32000, 64000): markup_obj.markup_32,
+    (64000, 128000): markup_obj.markup_64,
+    (128000, float('inf')): markup_obj.markup_128,
+}
+markup = None
 
 # При создании заказа создает объеты Goods на каждый товар заказа.
 def create_goods(order, order_detail, quantity):
@@ -26,20 +39,52 @@ def update_goods(sale_detail, quantity):
         order_list = OrderDetail.objects.filter(
             product=sale_detail.product)
         good = Goods.objects.filter(
-            sale_date__isnull=True, product__in=order_list).order_by(
+            sale_date__isnull=True,
+            received_date__received_date__isnull=False,
+            product__in=order_list).order_by(
             'order_date').select_related('received_date').last()
         good.sale_date = sale_detail.sale_date
         good.sale_price_RUB = sale_detail
-        good.days_in_stock = (sale_detail.sale_date.sale_date.date() - good.received_date.received_date.date()).days
+        good.days_in_stock = (good.sale_date.sale_date.date() - good.received_date.received_date.date()).days
         good.margin = (float(sale_detail.sale_price_RUB) - float(good.cost_price_RUB.cost_price_RUB))
         good.markup = (float(sale_detail.sale_price_RUB)/float(good.cost_price_RUB.cost_price_RUB) - 1)*100
         good.save()
 
+# При каждой закупке изменяет Catalog: цену товара в юанях и расчетные цены от закупки и от текущего курса.
+def update_catalog(order_detail):
+    if order_detail == OrderDetail.objects.last():
+        cost_price = int(order_detail.cost_price_RUB)
+        RMB_price = int(order_detail.ordering_price_RMB)
+        product = get_object_or_404(Catalog, title=order_detail.product)
+        product.order_price_RMB = RMB_price
+        for i, j in markup_dict.items():
+            min_price, max_price = i
+            if min_price <= cost_price < max_price:
+                markup = j
+        product.target_last_order_price_RUB = cost_price * (1 + markup / 100)
+        product.target_current_RMB_price_RUB = (
+            RMB_price * (1 + float(markup_obj.delivery_cost)/100) * float(markup_obj.exchange_rate) * (1 + markup / 100))
+        product.save()
 
+def update_exchange_rate(rmb):
+    catalog_list = Catalog.objects.all()
+    for catalog in catalog_list:
+        RMB_price = catalog.order_price_RMB
+        cost_price = float(RMB_price) * (1 + float(markup_obj.delivery_cost)/100) * float(rmb)
+        for i, j in markup_dict.items():
+            min_price, max_price = i
+            if min_price <= cost_price < max_price:
+                markup = j
+        catalog.target_current_RMB_price_RUB = cost_price * (1 + markup / 100)
+        catalog.save()
+
+
+# Для подсказки в форме добавления закупки
 def max_value():
     result = Orders.objects.aggregate(max_value=Max('order_number'))['max_value']
     return result if result is not None else 0
 
+# Для подсказки в форме добавления продажи
 def max_value_sale():
     result = Sales.objects.aggregate(max_value=Max('sale_number'))['max_value']
     return result if result is not None else 0

@@ -17,10 +17,17 @@
             <h6 class="card-subtitle mb-2 text-muted">
               <small>{% if product.description %} {{ product.description }} {% else %} Нет описания {% endif %}</td></small>
             </h6>
-            <p class="card-text">Прайс: {{ product.price_RUB|floatformat:-2|linebreaksbr }}</p>
-            <p class="card-text">Рынок: {{ product.market_price_RUB|floatformat:-2|linebreaksbr }}</p>
-            <p class="card-text">Расчет от закупки: {{ product.target_price_RUB|floatformat:-2|linebreaksbr }}<br>
-            Расчет от курса: {{ product.target_price_RUB|floatformat:-2|linebreaksbr }}</p>
+            <p class="card-text">Прайс: {{ product.price_RUB|floatformat:0|linebreaksbr }}<br>
+           Рынок: {% if product.market_price_RUB %}
+            {{ product.market_price_RUB|floatformat:0 }} {% else %} не определена {% endif %}</p>
+
+            <p class="card-text" > Расчет от закупки: 
+            <span class="{% if product.target_last_order_price_RUB > product.price_RUB %}text-danger{% endif %}">
+               {{ product.target_last_order_price_RUB|floatformat:0 }}</span>
+
+           <br>Расчет от курса:
+            <span class="{% if product.target_current_RMB_price_RUB > product.price_RUB %}text-danger{% endif %}">
+              {{ product.target_current_RMB_price_RUB|floatformat:0 }}</span></p>
             <div class="mb-2">
               <a class="btn btn-sm text-muted" href="{% url 'app:catalog_edit' product.id %}" role="button">Редактировать</a>
               <a class="btn btn-sm text-muted" href="{% url 'app:catalog_delete' product.id %}" role="button">Удалить</a>
@@ -32,9 +39,9 @@
               <small>
                 <br>
                 <br>
-                <p class="card-text">Габариты (д/ш/в): {{ product.length }} / {{ product.width }} / {{ product.height }} см</p>
-                <p class="card-text">Вес: {{ product.weight }} кг</p>
-                <br>
+                <p class="card-text">Габариты (д/ш/в): {{ product.length }} / {{ product.width }} / {{ product.height }} см<br>
+                Вес: {{ product.weight }} кг</p>
+                <p class="card-text">Цена в юанях: {{ product.order_price_RMB|floatformat:0 }} CNY</p>
                 <p class="card-text">В наличии: {{ product_count_stock }} шт.</p>
                 <p class="card-text">В ожидании: {{ product_count_wait }} шт.</p>
               </small>  

@@ -9,6 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from datetime import datetime
 from django.db.models import F, Sum, Q
+import csv
+import pandas as pd
 
 from app.models import (Orders, Goods, Catalog, OrderDetail, Sales, SaleDetail,
                          Payment_type, Client_type, Receiving_type, CustomSettings)
@@ -16,9 +18,9 @@ from app.models import (Orders, Goods, Catalog, OrderDetail, Sales, SaleDetail,
 from app.forms import (OrderForm, OrderDetailForm, SaleForm, SaleDetailForm,
                         ReceivedForm, EditDeleteOrderForm, EditOrderDetailForm,
                         CatalogForm, SaleEditDeleteForm, SaleEditDetailForm,
-                        CustomSettingsForm)
+                        CustomSettingsForm, FilterProductForm)
 
-from app.utils import (create_goods, update_goods,
+from app.utils import (create_goods, update_goods, update_catalog, update_exchange_rate,
                        change_order_detail_fields, change_sale_detail_fields,
                        change_order_days_in_stock, change_sale_days_in_stock)
 
@@ -72,6 +74,7 @@ def add_order_detail(request):
                 order.save()
                 create_goods(
                     order, order_detail, quantity)
+                update_catalog(order_detail)
             total_cost = OrderDetail.objects.filter(
                 order_number=order.id).aggregate(
                 total_cost=Sum(F('quantity') * F('cost_price_RUB')))['total_cost']
@@ -173,6 +176,7 @@ def edit_order_detail(request, **kwargs):
         if form.is_valid():
             form.save()
             change_order_detail_fields(instance)
+            update_catalog(instance)
             return redirect('app:order_detail', pk=order_number)
     return render(request, template, context)
 
@@ -490,6 +494,7 @@ def sale_detail_edit(request, **kwargs):
 @login_required
 def goods_list(request):
     template = 'app/goods_list.html'
+    form_product = FilterProductForm(request.POST or None)
     goods_list = Goods.objects.select_related(
         'order_number', 'order_date', 'received_date',
         'product', 'product__product',
@@ -499,10 +504,15 @@ def goods_list(request):
         'received_date__received_date', 'cost_price_RUB__cost_price_RUB',
         'product__product__title', 'sale_date__sale_date',
         'sale_price_RUB__sale_price_RUB').order_by('order_number')
+    if request.method == 'POST':
+        form_product = FilterProductForm(request.POST)
+        if form_product.is_valid():
+            product = form_product.cleaned_data['product']
+            goods_list = goods_list.filter(product__product=product)
     paginator = Paginator(goods_list, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    context = {'page_obj': page_obj}
+    context = {'page_obj': page_obj, 'form_product': form_product}
     return render(request, template, context)
 
 
@@ -549,6 +559,127 @@ def settings_edit(request):
     if request.method == 'POST':
         if form.is_valid():
             form.save()
+            update_exchange_rate(settings.exchange_rate)
             return redirect('app:profile', username=request.user.username)
     context = {'form': form}
     return render(request, template, context)
+
+# Импорт закупок
+def import_orders_data(request):
+    template = 'app/import_orders_data.html'
+    count = 0
+    if request.method == 'POST':
+        excel_file = request.FILES['file']
+        decoded_file = excel_file.read()
+
+        df1 = pd.read_excel(decoded_file, sheet_name=0)
+        for _, row in df1.iterrows():
+            product_list = []
+            order_number = int(row['order_number'])
+            order_date = row['order_date'].to_pydatetime()
+            quantity_name = int(row['quantity'])
+            received_date = row['received_date'].to_pydatetime()
+            created_by = request.user
+            order = Orders(
+                order_number=order_number,
+                order_date=order_date,
+                quantity=quantity_name,
+                received_date=received_date,
+                created_by=created_by,
+                is_published=True)
+            order.save()
+
+            df2 = pd.read_excel(decoded_file, sheet_name=1)
+            for _, row in df2.iloc[count:count+quantity_name].iterrows():
+                created_by=User.objects.get(username=request.user.username)
+                quantity=int(row[0])
+                product = Catalog.objects.get(title=row[1])
+                cost_price_RUB=int(row[2])
+                ordering_price_RMB=int(row[3])
+                order_detail = OrderDetail(
+                    order_number=order,
+                    order_date=order,
+                    received_date=order,
+                    created_by=created_by,
+                    product=product,
+                    quantity=quantity,
+                    cost_price_RUB=cost_price_RUB,
+                    ordering_price_RMB=ordering_price_RMB
+                    )
+                order_detail.save()
+                product_list.append(f'{product} - {quantity} ед.')
+                order.product_list = ', '.join(str(item) for item in product_list)
+                order.save()
+                create_goods(
+                    order, order_detail, quantity)
+                update_catalog(order_detail)
+            count = count + quantity_name
+            total_cost = OrderDetail.objects.filter(
+                order_number=order.id).aggregate(
+                total_cost=Sum(F('quantity') * F('cost_price_RUB')))['total_cost']
+            order.total_cost = total_cost
+            order.save()
+        return render(request, 'app/import_success.html')
+
+    return render(request, template)
+
+# Импорт продаж
+def import_sales_data(request):
+    template = 'app/import_sales_data.html'
+    count = 0
+    if request.method == 'POST':
+        excel_file = request.FILES['file']
+        decoded_file = excel_file.read()
+
+        df1 = pd.read_excel(decoded_file, sheet_name=0)
+        for _, row in df1.iterrows():
+            product_list = []
+            sale_number = int(row['sale_number'])
+            sale_date = row['sale_date'].to_pydatetime()
+            quantity_name = int(row['quantity'])
+            created_by = request.user
+            payment_type = Payment_type.objects.get(title=row['payment_type'])
+            client_type = Client_type.objects.get(title=row['client_type'])
+            receiving_type = Receiving_type.objects.get(title=row['receiving_type'])
+            client_name = row['client_name']
+            sale = Sales(
+                sale_number=sale_number,
+                sale_date=sale_date,
+                quantity=quantity_name,
+                created_by=created_by,
+                payment_type=payment_type,
+                client_type=client_type,
+                receiving_type=receiving_type,
+                client_name=client_name,
+                is_published=True)
+            sale.save()
+
+            df2 = pd.read_excel(decoded_file, sheet_name=1)
+            for _, row in df2.iloc[count:count+quantity_name].iterrows():
+                created_by=User.objects.get(username=request.user.username)
+                quantity=int(row[0])
+                product = Catalog.objects.get(title=row[1])
+                sale_price_RUB=int(row[2])
+                sale_detail = SaleDetail(
+                    sale_number=sale,
+                    sale_date=sale,
+                    created_by=created_by,
+                    product=product,
+                    quantity=quantity,
+                    sale_price_RUB=sale_price_RUB
+                    )
+                sale_detail.save()
+                product_list.append(f'{product} - {quantity} ед.')
+                sale.product_list = ', '.join(str(item) for item in product_list)
+                sale.save()
+                update_goods(sale_detail, quantity)
+            count = count + quantity_name
+            total_price = SaleDetail.objects.filter(
+                sale_number=sale.id).aggregate(
+                total_price=Sum(
+                    F('quantity') * F('sale_price_RUB')))['total_price']
+            sale.total_price = total_price
+            sale.save()
+        return render(request, 'app/import_success.html')
+
+    return render(request, template)

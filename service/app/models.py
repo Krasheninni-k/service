@@ -21,11 +21,17 @@ class Catalog(BaseModel):
     price_RUB = models.DecimalField(
         'Цена по прайсу, руб.', max_digits=9, decimal_places=2,
         null=True, blank=True, default=0)
-    target_price_RUB = models.DecimalField(
-        'Расчетная цена, руб.', max_digits=9, decimal_places=2,
+    target_last_order_price_RUB = models.DecimalField(
+        'Расчетная цена от последней закупки, руб.', max_digits=9, decimal_places=2,
+        null=True, blank=True, default=0)
+    target_current_RMB_price_RUB = models.DecimalField(
+        'Расчетная цена от курса, руб.', max_digits=9, decimal_places=2,
         null=True, blank=True, default=0)
     market_price_RUB = models.DecimalField(
         'Рыночная цена, руб.', max_digits=9, decimal_places=2,
+        null=True, blank=True, default=0)
+    order_price_RMB = models.DecimalField(
+        'Цена закупки в юанях.', max_digits=9, decimal_places=2,
         null=True, blank=True, default=0)
     image = models.ImageField('Фото', upload_to='app_images', blank=True)
     length = models.DecimalField(

@@ -3,7 +3,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .models import (Orders, OrderDetail, Catalog, Sales, SaleDetail,
+from .models import (Orders, OrderDetail, Catalog, Sales, SaleDetail, Goods,
                       Client_type, Payment_type, Receiving_type, CustomSettings)
 from .utils import max_value, max_value_sale
 
@@ -110,7 +110,8 @@ class CatalogForm(forms.ModelForm):
 
     class Meta:
         model = Catalog
-        exclude = ('created_at', 'created_by', 'target_price_RUB', 'is_published')
+        exclude = ('created_at', 'created_by', 'target_last_order_price_RUB',
+                   'target_current_RMB_price_RUB', 'is_published')
         widgets = {
             'description': forms.Textarea(attrs={'cols': '40', 'rows': '3'})}
 
@@ -128,7 +129,6 @@ class SaleForm(forms.ModelForm):
         self.fields['client_type'].initial = Client_type.objects.first()
         self.fields['payment_type'].initial = Payment_type.objects.first()
         self.fields['receiving_type'].initial = Receiving_type.objects.first()
-        self.fields['comment'].help_text = 'Укажите имя и контакты покупателя, а также любую другую полезную информацию'
 
     def clean(self):
         super().clean()
@@ -142,7 +142,7 @@ class SaleForm(forms.ModelForm):
 
     class Meta:
         model = Sales
-        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price')
+        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'comment')
         widgets = {
             'comment': forms.Textarea(attrs={'cols': '40', 'rows': '3'})}
 
@@ -170,7 +170,7 @@ class SaleEditDeleteForm(forms.ModelForm):
 
     class Meta:
         model = Sales
-        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'quantity')
+        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'quantity', 'comment')
         widgets = {
             'sale_date': forms.DateInput(attrs={'format': '%d.%m.%Y'})}
 
@@ -189,3 +189,11 @@ class CustomSettingsForm(forms.ModelForm):
    class Meta:
         model = CustomSettings
         fields = '__all__'
+
+
+class FilterProductForm(forms.Form):
+    product = forms.ModelChoiceField(
+        queryset=Catalog.objects.all(),
+        label="Товар",
+        required=False
+        )

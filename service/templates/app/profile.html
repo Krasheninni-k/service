@@ -14,6 +14,8 @@
       {% if user.is_authenticated and request.user == profile %}
       <a class="btn btn-sm text-muted" href="{% url 'app:edit_profile' username=profile.username %}">Редактировать профиль</a>
       <a class="btn btn-sm text-muted" href="{% url 'password_change' %}">Изменить пароль</a>
+      <a class="btn btn-sm text-muted" href="{% url 'app:import_orders_data' %}">Импорт закупок</a>
+      <a class="btn btn-sm text-muted" href="{% url 'app:import_sales_data' %}">Импорт продаж</a>
       {% endif %}
     </ul>
   </small>

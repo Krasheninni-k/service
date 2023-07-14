@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load django_bootstrap5 %}
 {% block title %}
   Список товаров
 {% endblock %}
@@ -13,7 +14,19 @@
         <thead>
           <tr>
             <th>№</th>
-            <th style="width: 250px;">Товар</th>
+            <th style="width: 250px;">
+              <br><form method="post" enctype="multipart/form-data" id="myForm">
+                {% csrf_token %}
+                {% bootstrap_form form_product %}
+                <input type="submit" style="display: none;">
+              </form>
+              <script>
+                const form = document.getElementById('myForm');
+              
+                form.addEventListener('change', () => {
+                  form.submit();
+                });
+              </script> Товар</th>
             <th style="width: 100px;">Оплачено</th>
             <th style="width: 100px;">Получено</th>
             <th style="width: 100px;">Продано</th>

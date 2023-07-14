@@ -14,11 +14,13 @@
         <thead>
           <tr>
             <th>Наименование</th>
-            <th> В наличии</th>
-            <th>В ожидании</th>
-            <th>Цена по прайсу</th>
-            <th>Расчетная цена</th>
-            <th> Рыночная цена</th>
+            <th> Наличие</th>
+            <th>Ожидание</th>
+            <th>Прайс</th>
+            <th> Рынок</th>
+            <th> Цена в юанях</th>
+            <th>Расчет от закупки</th>
+            <th> Расчет от курса</th>
           </tr>
         </thead>
         <tbody> 
@@ -27,9 +29,20 @@
               <td>{{ catalog.title }}</td>
               <td>{{ catalog.count_stock }}</td>
               <td>{{ catalog.count_wait }}</td>
-              <td>{{ catalog.price_RUB|floatformat:-2 }}</td>
-              <td></td>
-              <td>{% if catalog.market_price_RUB %} {{ catalog.market_price_RUB|floatformat:-2 }} {% endif %}</td>
+              <td>{{ catalog.price_RUB|floatformat:0 }}</td>
+              <td>{% if catalog.market_price_RUB %}
+                {{ catalog.market_price_RUB|floatformat:0 }} {% endif %}</td>
+              <td>{% if catalog.order_price_RMB %}
+                  {{ catalog.order_price_RMB|floatformat:0 }} {% endif %}</td>
+
+
+              <td>{% if catalog.target_last_order_price_RUB %} 
+                <span class="{% if catalog.target_last_order_price_RUB > catalog.price_RUB %}text-danger{% endif %}">
+                {{ catalog.target_last_order_price_RUB|floatformat:0 }} </span> {% endif %}</td>
+
+              <td>{% if catalog.target_current_RMB_price_RUB %} 
+                <span class="{% if catalog.target_current_RMB_price_RUB > catalog.price_RUB %}text-danger{% endif %}">
+                {{ catalog.target_current_RMB_price_RUB|floatformat:0 }}</span>{% endif %}</td>
               <td>
                 <a class="btn btn-sm text-muted" href="{% url 'app:catalog_detail' catalog.id %}" role="button">
                   Детали

@@ -63,4 +63,6 @@ urlpatterns = [
      # Пользовательские настройки
      path('app/settings_edit/',
           views.settings_edit, name='settings_edit'),
+     path('app/import/orders/', views.import_orders_data, name='import_orders_data'),
+     path('app/import/sales/', views.import_sales_data, name='import_sales_data'),
 ]
