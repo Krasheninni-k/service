@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+{% block title %}
+    Импорт базы данных каталога
+{% endblock %}
+{% block content %}
+  <div class="col d-flex justify-content-center">
+    <div class="card" style="width: 40rem;">
+      <div class="card-header"> 
+          Загрузите файл импорта базы данных каталога
+      </div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="file" accept=".xls">
+            <button type="submit">Импортировать</button>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

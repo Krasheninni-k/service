@@ -22,7 +22,8 @@ from app.forms import (OrderForm, OrderDetailForm, SaleForm, SaleDetailForm,
 
 from app.utils import (create_goods, update_goods, update_catalog, update_exchange_rate,
                        change_order_detail_fields, change_sale_detail_fields,
-                       change_order_days_in_stock, change_sale_days_in_stock)
+                       change_order_days_in_stock, change_sale_days_in_stock,
+                       product_list_for_import)
 
 current_time = timezone.now()
 User = get_user_model()
@@ -207,7 +208,7 @@ def catalog(request):
                              Q(order_detail__goods__sale_date__sale_date__isnull=True))),
         count_wait=Count('order_detail__goods',
                       filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('title')[:100]
-    paginator = Paginator(catalog, 10)
+    paginator = Paginator(catalog, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     context = {'page_obj': page_obj}
@@ -626,6 +627,126 @@ def import_orders_data(request):
 # Импорт продаж
 def import_sales_data(request):
     template = 'app/import_sales_data.html'
+    previous_client_name = None
+    previous_product = None
+    if request.method == 'POST':
+        excel_file = request.FILES['file']
+        decoded_file = excel_file.read()
+
+        df1 = pd.read_excel(decoded_file, sheet_name=0)
+        for _, row in df1.iterrows():
+            last_sale = Sales.objects.order_by('id').last()
+            sale_number = last_sale.sale_number + 1
+            sale_date = row['sale_date'].to_pydatetime()
+            created_by = request.user
+            payment_type = Payment_type.objects.get(title=row['payment_type'])
+            client_type = Client_type.objects.get(title=row['client_type'])
+            receiving_type = Receiving_type.objects.get(title=row['receiving_type'])
+            client_name = row['client_name']
+            product = Catalog.objects.get(title=row['product'])
+            sale_price_RUB = int(row['sale_price_RUB'])
+            if client_name == previous_client_name:
+                if product == previous_product:
+                    previous_sale = Sales.objects.order_by('id').last()
+                    previous_sale_detail = SaleDetail.objects.order_by('id').last()
+                    previous_sale_detail.quantity += 1
+                    previous_sale_detail.save()
+                    previous_sale.total_price += previous_sale_detail.sale_price_RUB
+                    product_list_for_import(previous_sale, previous_sale_detail)
+                    update_goods(previous_sale_detail, 1)
+                    previous_client_name = client_name
+                    previous_product = product
+                else:
+                    previous_sale = Sales.objects.order_by('id').last()
+                    previous_sale.quantity += 1
+                    sale_detail = SaleDetail(
+                        sale_number=previous_sale,
+                        sale_date=previous_sale,
+                        created_by=created_by,
+                        product=product,
+                        sale_price_RUB=sale_price_RUB
+                        )
+                    sale_detail.save()
+                    previous_sale.total_price += sale_detail.sale_price_RUB
+                    product_list_for_import(previous_sale, sale_detail)
+                    update_goods(sale_detail, 1)
+                    previous_client_name = client_name
+                    previous_product = product
+            else:
+                sale = Sales(
+                    sale_number=sale_number,
+                    sale_date=sale_date,
+                    quantity=1,
+                    created_by=created_by,
+                    payment_type=payment_type,
+                    client_type=client_type,
+                    receiving_type=receiving_type,
+                    client_name=client_name
+                    )
+                sale.save()
+                sale_detail = SaleDetail(
+                    sale_number=sale,
+                    sale_date=sale,
+                    created_by=created_by,
+                    product=product,
+                    sale_price_RUB=sale_price_RUB
+                    )
+                sale_detail.save()
+                sale.total_price = sale_detail.sale_price_RUB
+                product_list_for_import(sale, sale_detail)
+                update_goods(sale_detail, 1)
+                previous_client_name = client_name
+                previous_product = product
+
+        return render(request, 'app/import_success.html')
+
+    return render(request, template)
+
+# Импорт каталога
+def import_catalog_data(request):
+    template = 'app/import_catalog_data.html'
+    created_by = request.user
+    if request.method == 'POST':
+        excel_file = request.FILES['file']
+        decoded_file = excel_file.read()
+        df1 = pd.read_excel(decoded_file, sheet_name=0)
+        for _, row in df1.iterrows():
+            title = row['title']
+            instance = Catalog(
+                title=title,
+                created_by=created_by)
+            instance.save()
+        df2 = pd.read_excel(decoded_file, sheet_name=1)
+        for _, row in df2.iterrows():
+            title = row['title']
+            instance = Client_type(
+                title=title,
+                created_by=created_by)
+            instance.save()
+        df3 = pd.read_excel(decoded_file, sheet_name=2)
+        for _, row in df3.iterrows():
+            title = row['title']
+            instance = Payment_type(
+                title=title,
+                created_by=created_by)
+            instance.save()
+        df4 = pd.read_excel(decoded_file, sheet_name=3)
+        for _, row in df4.iterrows():
+            title = row['title']
+            instance = Receiving_type(
+                title=title,
+                created_by=created_by)
+            instance.save()
+
+        return render(request, 'app/import_success.html')
+
+    return render(request, template)
+
+
+
+"""
+def import_sales_data(request):
+    template = 'app/import_sales_data.html'
     count = 0
     if request.method == 'POST':
         excel_file = request.FILES['file']
@@ -683,3 +804,4 @@ def import_sales_data(request):
         return render(request, 'app/import_success.html')
 
     return render(request, template)
+"""

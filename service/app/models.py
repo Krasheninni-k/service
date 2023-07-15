@@ -208,6 +208,11 @@ class SaleDetail(BaseModel):
     sale_price_RUB = models.DecimalField(
         'Цена продажи', max_digits=9, decimal_places=2,
         null=True, blank=True, default=0)
+    
+    class Meta:
+        verbose_name = 'Детали продаж'
+        verbose_name_plural = 'Детали продаж'
+        ordering = ['-sale_number']
 
 class Goods(BaseModel):
     order_number = models.ForeignKey(

@@ -162,3 +162,12 @@ def change_sale_detail_fields(instance):
          total_price=Sum(F('quantity') * F('sale_price_RUB')))['total_price']
     sale.total_price = total_price
     sale.save()
+
+def product_list_for_import(sale, sale_detail):
+    sale_detail_list = SaleDetail.objects.filter(
+        sale_number=sale_detail.sale_number).order_by('id')
+    product_list = []
+    for i in sale_detail_list:
+        product_list.append(f'{i.product} - {i.quantity} ед.')
+    sale.product_list = ', '.join(str(item) for item in product_list)
+    sale.save()
