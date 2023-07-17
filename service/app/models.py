@@ -147,7 +147,7 @@ class OrderDetail(BaseModel):
 
 class Sales(BaseModel):
     sale_number = models.IntegerField('Номер продажи',  default=0)
-    sale_date = models.DateTimeField('Дата продажи', blank=True)
+    sale_date = models.DateTimeField('Дата продажи')
     quantity = models.IntegerField('Количество наименований товаров',  default=1)
     product_list = models.TextField('Cостав продажи', blank=True)
     total_price = models.DecimalField(
@@ -158,20 +158,22 @@ class Sales(BaseModel):
         on_delete=models.SET_NULL,
         related_name='goods',
         verbose_name='Способ оплаты',
-        null=True, blank=True)
+        null=True)
     client_type = models.ForeignKey(
         Client_type,
         on_delete=models.SET_NULL,
         related_name='goods',
         verbose_name='Тип покупателя',
-        null=True, blank=True)
+        null=True)
     receiving_type = models.ForeignKey(
         Receiving_type,
         on_delete=models.SET_NULL,
         related_name='goods',
         verbose_name='Тип получения',
-        null=True, blank=True)
-    client_name = models.CharField('Имя покупателя', max_length=256, default='Покупатель', null=True, blank=True)
+        null=True)
+    client_name = models.CharField('Имя покупателя', max_length=256, null=True)
+    client_contact = models.CharField('Контакт', max_length=256, null=True)
+    regular_client = models.BooleanField('Повторное обращение', default=False)
     comment = models.CharField('Комментарий', max_length=256, null=True, blank=True)
 
     class Meta:

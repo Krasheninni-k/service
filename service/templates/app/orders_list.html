@@ -7,7 +7,7 @@
   <div class="card" style="width: 60rem;">
     <div class="card-header d-flex justify-content-between">
       <span>Список закупок:</span>
-      <a class="btn btn-primary" href="{% url 'app:add_order' %}" role="button">Новая закупка</a>
+      <a class="btn btn-primary" href="{% url 'app:order_add' %}" role="button">Новая закупка</a>
     </div>
     <div class="card-body">
       <table class="table">
@@ -16,7 +16,7 @@
             <th>№</th>
             <th style="width: 100px;">Оплачено</th>
             <th>Кол-во</th>
-            <th style="width: 300px;">Состав закупки</th>
+            <th style="width: 400px;">Состав закупки</th>
             <th>Себест.</th>
             <th style="width: 100px;">Получено</th>
           </tr>
@@ -27,11 +27,11 @@
               <td>{{ order.order_number }}</td>
               <td>{{ order.order_date|date:"d-m-Y" }}</td>
               <td>{{ order.quantity }}</td>
-              <td>{{ order.product_list }}</td>
+              <td>{{ order.product_list|truncatewords:30 }}</td>
               <td>{{ order.total_cost|floatformat:-2 }}</td>
               <td>{% if  order.received_date %} {{ order.received_date|date:"d-m-Y" }} 
                 {% else %} 
-                <a class="btn btn-sm text-muted" href="{% url 'app:order_received' order.order_number %}" role="button">
+                <a class="btn btn-sm text-danger" href="{% url 'app:order_received' order.order_number %}" role="button">
                   В пути
                 </a>
                 {% endif %}</td>

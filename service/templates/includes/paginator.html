@@ -5,7 +5,8 @@
         <li class="page-item"><a class="page-link" href="?page=1">Первая</a></li>
         <li class="page-item">
           <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
-            << </a>
+            &lt;&lt;
+          </a>
         </li>
       {% endif %}
       {% for i in page_obj.paginator.page_range %}
@@ -14,15 +15,34 @@
             <span class="page-link">{{ i }}</span>
           </li>
         {% else %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ i }}">{{ i }}</a>
-          </li>
+          {% if page_obj.number <= 3 and i <= 5 %}  {# Ограничение первых 5 страниц #}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+            </li>
+          {% elif page_obj.number > page_obj.paginator.num_pages|add:'-3' and i > page_obj.paginator.num_pages|add:'-5' %} 
+           {# Ограничение последних 5 страниц #}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+            </li>
+          {% elif page_obj.number > 3 and page_obj.number <= page_obj.paginator.num_pages|add:'-3' %}  
+          {# Ограничение текущей страницы и окружающих 2 страницы #}
+            {% if i == 1 or i == page_obj.number or i == page_obj.number|add:'+1' or i == page_obj.number|add:'-1' or i == page_obj.paginator.num_pages %}  {# Отображение текущей страницы, ее соседей и первой/последней страницы #}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+              </li>
+            {% elif i == page_obj.number|add:'-2' or i == page_obj.number|add:'+2' %}  
+            {# Добавление "..." для пропуска страниц между текущей и ее соседями #}
+              <li class="page-item">
+                <span class="page-link">...</span>
+              </li>
+            {% endif %}
+          {% endif %}
         {% endif %}
       {% endfor %}
       {% if page_obj.has_next %}
         <li class="page-item">
           <a class="page-link" href="?page={{ page_obj.next_page_number }}">
-            >>
+            &gt;&gt;
           </a>
         </li>
         <li class="page-item">

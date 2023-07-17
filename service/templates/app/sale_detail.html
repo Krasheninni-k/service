@@ -34,7 +34,10 @@
         <div class="col-md-6">
           <h6 class="card-subtitle mb-2 text-muted">
             <small>
-              Комментарий: {{ sale_info.comment }}
+              Контакт: {% if 'https:' in sale_info.client_contact %} <a href="{{ sale_info.client_contact }}"> профиль авито</a> 
+              {% else %} {{ sale_info.client_contact }} {% endif %}<br>
+              Повторное обращение: {% if sale_info.regular_client %} да {% else %} нет {% endif %}<br>
+              {% if sale_info.comment %} Комментарий:  {{ sale_info.comment }} {% else %} Нет комментария {% endif %}<br>
             </small>
           </h6>
         </div>

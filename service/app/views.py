@@ -28,7 +28,6 @@ from app.utils import (create_goods, update_goods, update_catalog, update_exchan
 current_time = timezone.now()
 User = get_user_model()
 
-
 def index(request):
     template = 'app/index.html'
     return render(request, template)
@@ -36,11 +35,11 @@ def index(request):
 
 # Закупки
 @login_required
-def add_order_detail(request):
+def order_detail_add(request):
     number = int(request.GET.get('order_number'))
     quantity_name = int(request.GET.get('quantity'))
     order_date = request.GET.get('order_date')
-    template = 'app/add_order_detail.html'
+    template = 'app/order_detail_add.html'
     forms = []
     product_list = []
 
@@ -92,8 +91,8 @@ def add_order_detail(request):
 
 
 @login_required
-def add_order(request):
-    template = 'app/add_order.html'
+def order_add(request):
+    template = 'app/order_add.html'
     form = OrderForm(request.POST or None)
     context = {'form': form}
     if form.is_valid():
@@ -101,7 +100,7 @@ def add_order(request):
         order_date = form.cleaned_data['order_date'].date()
         order_number = form.cleaned_data['order_number']
         redirect_url = reverse(
-            'app:add_order_detail') + f'?quantity={quantity}&order_date={order_date}&order_number={order_number}'
+            'app:order_detail_add') + f'?quantity={quantity}&order_date={order_date}&order_number={order_number}'
         return redirect(redirect_url)
     return render(request, template, context)
 
@@ -137,8 +136,8 @@ def order_detail(request, pk):
 
 
 @login_required
-def delete_order(request, pk):
-    template = 'app/edit_delete_order.html'
+def order_delete(request, pk):
+    template = 'app/order_edit_delete.html'
     instance = get_object_or_404(Orders, order_number=pk)
     form = EditDeleteOrderForm(instance=instance)
     context = {'form': form}
@@ -149,8 +148,8 @@ def delete_order(request, pk):
 
 
 @login_required
-def edit_order(request, pk):
-    template = 'app/edit_delete_order.html'
+def order_edit(request, pk):
+    template = 'app/order_edit_delete.html'
     instance = get_object_or_404(Orders, order_number=pk)
     if request.method == 'POST':
         form = EditDeleteOrderForm(request.POST, instance=instance)
@@ -166,8 +165,8 @@ def edit_order(request, pk):
 
 
 @login_required
-def edit_order_detail(request, **kwargs):
-    template = 'app/edit_order_detail.html'
+def order_detail_edit(request, **kwargs):
+    template = 'app/order_detail_edit.html'
     instance = get_object_or_404(OrderDetail, pk=kwargs['pk'])
     order_number = instance.order_number.order_number
     form = EditOrderDetailForm(instance=instance)
@@ -183,8 +182,8 @@ def edit_order_detail(request, **kwargs):
 
 
 @login_required
-def received_order(request, pk):
-    template = 'app/received_order.html'
+def order_received(request, pk):
+    template = 'app/order_received.html'
     order = get_object_or_404(Orders, order_number=pk)
     form = ReceivedForm(request.POST or None)
     context = {'form': form}
@@ -211,7 +210,9 @@ def catalog(request):
     paginator = Paginator(catalog, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    context = {'page_obj': page_obj}
+    count_product = Catalog.objects.select_related('created_by').filter(
+        is_published=True).count
+    context = {'page_obj': page_obj, 'count_product': count_product}
     return render(request, template, context)
 
 
@@ -332,6 +333,9 @@ def sale_detail_add(request):
     sale_number = request.GET.get('sale_number')
     sale_date = request.GET.get('sale_date')
     client_name = request.GET.get('client_name')
+    client_contact = request.GET.get('client_contact')
+    comment = request.GET.get('comment')
+    regular_client = request.GET.get('regular_client')
     quantity_name = int(request.GET.get('quantity'))
     payment_type = Payment_type.objects.get(
         id=int(request.GET.get('payment_type')))
@@ -356,7 +360,10 @@ def sale_detail_add(request):
                 payment_type=payment_type,
                 client_type=client_type,
                 receiving_type=receiving_type,
-                client_name=client_name
+                client_name=client_name,
+                client_contact=client_contact,
+                comment=comment,
+                regular_client=regular_client
             )
             for i in range(quantity_name):
                 quantity = int(request.POST.get(
@@ -407,26 +414,52 @@ def sale_add(request):
         client_type = form.cleaned_data['client_type'].id
         receiving_type = form.cleaned_data['receiving_type'].id
         client_name = form.cleaned_data['client_name']
+        client_contact = form.cleaned_data['client_contact']
+        comment = form.cleaned_data['comment']
+        regular_client = form.cleaned_data['regular_client']
         redirect_url = (
             reverse('app:sale_detail_add') +
             f'?sale_number={sale_number}&sale_date={sale_date}'
             f'&quantity={quantity}&payment_type={payment_type}'
             f'&client_type={client_type}&receiving_type={receiving_type}'
-            f'&client_name={client_name}')
+            f'&client_name={client_name}&client_contact={client_contact}'
+            f'&comment={comment}&regular_client={regular_client}')
         return HttpResponseRedirect(redirect_url)
     return render(request, template, context)
 
 
 @login_required
 def sales_list(request):
+    current_date = datetime.now()
+    current_month = current_date.month
+    current_year = current_date.year
     template = 'app/sales_list.html'
     sales_list = Sales.objects.select_related(
         'created_by', 'payment_type', 'receiving_type', 'client_type').filter(
         is_published=True)
-    paginator = Paginator(sales_list, 10)
+    paginator = Paginator(sales_list, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    context = {'page_obj': page_obj}
+    count_sales = Sales.objects.filter(
+        sale_date__month=current_month,
+        sale_date__year=current_year
+        ).values('id').count()
+    goods_list = Goods.objects.filter(
+        sale_date__sale_date__month=current_month,
+        sale_date__sale_date__year=current_year
+        ).aggregate(
+        count_goods=Count('id'),
+        sum_sale=Sum('sale_price_RUB__sale_price_RUB'),
+        sum_margin=Sum('margin')
+        )
+    total_margin = goods_list['sum_margin'] / goods_list['sum_sale']*100
+    total_markup = (goods_list['sum_sale'] / (goods_list['sum_sale'] - goods_list['sum_margin']) - 1) *100
+    context = {'page_obj': page_obj,
+               'goods_list': goods_list,
+               'current_date': current_date,
+               'count_sales': count_sales,
+               'total_margin': total_margin,
+               'total_markup': total_markup}
     return render(request, template, context)
 
 
@@ -635,14 +668,22 @@ def import_sales_data(request):
 
         df1 = pd.read_excel(decoded_file, sheet_name=0)
         for _, row in df1.iterrows():
-            last_sale = Sales.objects.order_by('id').last()
-            sale_number = last_sale.sale_number + 1
+            last_sale = Sales.objects.select_related(
+                'created_by',
+                'payment_type',
+                'client_type',
+                'receiving_type').order_by('id').last()
+            if last_sale is None:
+                sale_number = 1
+            else:
+                sale_number = last_sale.sale_number + 1
             sale_date = row['sale_date'].to_pydatetime()
             created_by = request.user
             payment_type = Payment_type.objects.get(title=row['payment_type'])
             client_type = Client_type.objects.get(title=row['client_type'])
             receiving_type = Receiving_type.objects.get(title=row['receiving_type'])
             client_name = row['client_name']
+            client_contact = row['client_contact']
             product = Catalog.objects.get(title=row['product'])
             sale_price_RUB = int(row['sale_price_RUB'])
             if client_name == previous_client_name:
@@ -681,7 +722,8 @@ def import_sales_data(request):
                     payment_type=payment_type,
                     client_type=client_type,
                     receiving_type=receiving_type,
-                    client_name=client_name
+                    client_name=client_name,
+                    client_contact=client_contact
                     )
                 sale.save()
                 sale_detail = SaleDetail(
@@ -741,67 +783,3 @@ def import_catalog_data(request):
         return render(request, 'app/import_success.html')
 
     return render(request, template)
-
-
-
-"""
-def import_sales_data(request):
-    template = 'app/import_sales_data.html'
-    count = 0
-    if request.method == 'POST':
-        excel_file = request.FILES['file']
-        decoded_file = excel_file.read()
-
-        df1 = pd.read_excel(decoded_file, sheet_name=0)
-        for _, row in df1.iterrows():
-            product_list = []
-            sale_number = int(row['sale_number'])
-            sale_date = row['sale_date'].to_pydatetime()
-            quantity_name = int(row['quantity'])
-            created_by = request.user
-            payment_type = Payment_type.objects.get(title=row['payment_type'])
-            client_type = Client_type.objects.get(title=row['client_type'])
-            receiving_type = Receiving_type.objects.get(title=row['receiving_type'])
-            client_name = row['client_name']
-            sale = Sales(
-                sale_number=sale_number,
-                sale_date=sale_date,
-                quantity=quantity_name,
-                created_by=created_by,
-                payment_type=payment_type,
-                client_type=client_type,
-                receiving_type=receiving_type,
-                client_name=client_name,
-                is_published=True)
-            sale.save()
-
-            df2 = pd.read_excel(decoded_file, sheet_name=1)
-            for _, row in df2.iloc[count:count+quantity_name].iterrows():
-                created_by=User.objects.get(username=request.user.username)
-                quantity=int(row[0])
-                product = Catalog.objects.get(title=row[1])
-                sale_price_RUB=int(row[2])
-                sale_detail = SaleDetail(
-                    sale_number=sale,
-                    sale_date=sale,
-                    created_by=created_by,
-                    product=product,
-                    quantity=quantity,
-                    sale_price_RUB=sale_price_RUB
-                    )
-                sale_detail.save()
-                product_list.append(f'{product} - {quantity} ед.')
-                sale.product_list = ', '.join(str(item) for item in product_list)
-                sale.save()
-                update_goods(sale_detail, quantity)
-            count = count + quantity_name
-            total_price = SaleDetail.objects.filter(
-                sale_number=sale.id).aggregate(
-                total_price=Sum(
-                    F('quantity') * F('sale_price_RUB')))['total_price']
-            sale.total_price = total_price
-            sale.save()
-        return render(request, 'app/import_success.html')
-
-    return render(request, template)
-"""

@@ -5,9 +5,32 @@
 {% block content %}
   <div class="col d-flex justify-content-center">
     <div class="card" style="width: 60rem;">
-      <div class="card-header d-flex justify-content-between">
-        <span>Список продаж:</span>
-        <a class="btn btn-primary" href="{% url 'app:sale_add' %}" role="button">Новая продажа</a>
+      <div class="card-header">
+        <div class="row">
+          <div class="col-md-3">
+            <span><b>{{ current_date|date:"F" }}</b>
+              <br>Количество продаж: {{ count_sales }}
+              <br>Продано товаров: {{ goods_list.count_goods }}
+              <br>
+              <br><b> Список продаж: </b>
+            </span>
+          </div>
+          <div class="col-md-3">
+            <span>
+              <br>Сумма продаж: {{ goods_list.sum_sale }}
+              <br>Маржа: {{ goods_list.sum_margin }}
+            </span>
+          </div>
+          <div class="col-md-3">
+              <span class="{% if total_margin < 30 %}text-danger{% endif %}">
+              <br>Маржинальность: {{ total_margin|floatformat:-2 }} %</span>
+              <span class="{% if total_markup < 42.8 %}text-danger{% endif %}">
+              <br>Наценка: {{ total_markup|floatformat:-2 }} %</span>
+          </div>
+          <div class="col-md-3 d-flex justify-content-end align-items-center">
+            <a class="btn btn-primary align-self-end" href="{% url 'app:sale_add' %}" role="button">Новая продажа</a>
+          </div>
+        </div>
       </div>
       <div class="card-body">
         <table class="table">
