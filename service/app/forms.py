@@ -197,3 +197,16 @@ class FilterProductForm(forms.Form):
         label="Товар",
         required=False
         )
+
+
+class StartEndDateForm(forms.Form):
+    start_date = forms.DateField(
+        label="Начало",
+        required=False,
+        widget=forms.DateInput(attrs={'type':'date', 'class': 'form-control'})
+        )
+    end_date = forms.DateField(
+        label="Конец",
+        required=False,
+        widget=forms.DateInput(attrs={'type':'date', 'class': 'form-control'})
+        )

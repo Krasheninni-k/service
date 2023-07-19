@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load django_bootstrap5 %}
 {% block title %}
 Продажи
 {% endblock %}
@@ -8,26 +9,62 @@
       <div class="card-header">
         <div class="row">
           <div class="col-md-3">
-            <span><b>{{ current_date|date:"F" }}</b>
-              <br>Количество продаж: {{ count_sales }}
+            <span><b>{% if month_list %} {{ month_list.0.sale_date|date:"F" }} {% else %} {{ current_date|date:"F" }} {% endif %}</b>
+              <br>Количество продаж: {% if month_list %} {{ month_list.count }} {% else %} {{ count_sales }} {% endif %}
               <br>Продано товаров: {{ goods_list.count_goods }}
               <br>
-              <br><b> Список продаж: </b>
-            </span>
           </div>
           <div class="col-md-3">
-            <span>
-              <br>Сумма продаж: {{ goods_list.sum_sale }}
-              <br>Маржа: {{ goods_list.sum_margin }}
-            </span>
+              <br>{% if goods_list.sum_sale is not None %}Сумма продаж: {{ goods_list.sum_sale }} {% else %} {% endif %}
+              <br>{% if goods_list.sum_sale is not None %}Маржа: {{ goods_list.sum_margin }} {% else %} {% endif %}
           </div>
           <div class="col-md-3">
               <span class="{% if total_margin < 30 %}text-danger{% endif %}">
-              <br>Маржинальность: {{ total_margin|floatformat:-2 }} %</span>
+              <br>{% if goods_list.sum_sale is not None %}Маржинальность: {{ total_margin|floatformat:-2 }} % {% else %} {% endif %}</span>
               <span class="{% if total_markup < 42.8 %}text-danger{% endif %}">
-              <br>Наценка: {{ total_markup|floatformat:-2 }} %</span>
+              <br>{% if goods_list.sum_sale is not None %}Наценка: {{ total_markup|floatformat:-2 }} % {% else %} {% endif %}</span>
           </div>
-          <div class="col-md-3 d-flex justify-content-end align-items-center">
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <br><b> Список продаж: </b>
+              <br><form method="post" enctype="multipart/form-data" 
+              id="myForm" class="form-inline d-flex">
+                {% csrf_token %}
+                {% bootstrap_form start_end_date_form %}
+              </form>
+              <style>
+                label.form-label {
+                    display: none;
+                }
+                .col-md-6.form-inline {
+                    margin-bottom: 0;
+                }
+            </style>
+            <script>
+              const form = document.getElementById('myForm');
+              const fields = form.querySelectorAll('input, select, textarea');
+          
+              fields.forEach(field => {
+                  field.addEventListener('input', () => {
+                      if (checkAllFieldsFilled()) {
+                          form.submit();
+                      }
+                  });
+              });
+          
+              function checkAllFieldsFilled() {
+                  let allFieldsFilled = true;
+                  fields.forEach(field => {
+                      if (field.value.trim() === '') {
+                          allFieldsFilled = false;
+                      }
+                  });
+                  return allFieldsFilled;
+              }
+          </script>
+          </div>
+          <div class="col-md-6 d-flex justify-content-end align-items-center mb-3">
             <a class="btn btn-primary align-self-end" href="{% url 'app:sale_add' %}" role="button">Новая продажа</a>
           </div>
         </div>
@@ -40,18 +77,40 @@
               <th style="width: 120px;">Дата</th>
               <th style="width: 300px;">Состав продажи</th>
               <th>Сумма сделки</th>
+              <th>Имя клиента</th>
               <th>Тип клиента</th>
               <th>Способ оплаты</th>
               <th>Способ получения</th>
             </tr>
           </thead>
-          <tbody> 
+          <tbody>
+            {% if month_list is not None %}
+            {% for sale in month_list %}
+            <tr>
+              <td>{{ sale.sale_number }}</td>
+              <td>{{ sale.sale_date|date:"d-m-Y" }}</td>
+              <td>{{ sale.product_list }}</td>
+              <td>{{ sale.total_price|floatformat:-2 }}</td>
+              <td>{{ sale.client_name }}</td>
+              <td>{{ sale.client_type }}</td>
+              <td>{{ sale.payment_type }}</td>
+              <td>{{ sale.receiving_type }}</td>
+              <td>
+                <a class="btn btn-sm text-muted" href="{% url 'app:sale_detail' sale.sale_number %}" role="button">
+                  Детали
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+
             {% for sale in page_obj %}
             <tr>
               <td>{{ sale.sale_number }}</td>
               <td>{{ sale.sale_date|date:"d-m-Y" }}</td>
               <td>{{ sale.product_list }}</td>
               <td>{{ sale.total_price|floatformat:-2 }}</td>
+              <td>{{ sale.client_name }}</td>
               <td>{{ sale.client_type }}</td>
               <td>{{ sale.payment_type }}</td>
               <td>{{ sale.receiving_type }}</td>
@@ -62,10 +121,13 @@
               </td>
             </tr>
           {% endfor %}
+          {% endif %}
           </tbody>
         </table>
       </div>
     </div>
   </div>
+  {% if month_list is None %}
   {% include "includes/paginator.html" %}
+  {% endif %}
 {% endblock %}

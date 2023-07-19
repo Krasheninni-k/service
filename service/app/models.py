@@ -237,6 +237,12 @@ class Goods(BaseModel):
         on_delete=models.CASCADE,
         related_name='goods',
         verbose_name='Наименование товара')
+    price_RUB = models.ForeignKey(
+        Catalog,
+        on_delete=models.SET_NULL,
+        related_name='goods',
+        verbose_name='Цена по прайсу',
+        null=True, blank=True)
     ordering_price_RMB = models.ForeignKey(
         OrderDetail,
         on_delete=models.CASCADE,

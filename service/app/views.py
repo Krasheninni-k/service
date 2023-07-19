@@ -8,9 +8,9 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from datetime import datetime
-from django.db.models import F, Sum, Q
-import csv
+from django.db.models import F, Sum, Q, Count
 import pandas as pd
+import calendar
 
 from app.models import (Orders, Goods, Catalog, OrderDetail, Sales, SaleDetail,
                          Payment_type, Client_type, Receiving_type, CustomSettings)
@@ -18,12 +18,13 @@ from app.models import (Orders, Goods, Catalog, OrderDetail, Sales, SaleDetail,
 from app.forms import (OrderForm, OrderDetailForm, SaleForm, SaleDetailForm,
                         ReceivedForm, EditDeleteOrderForm, EditOrderDetailForm,
                         CatalogForm, SaleEditDeleteForm, SaleEditDetailForm,
-                        CustomSettingsForm, FilterProductForm)
+                        CustomSettingsForm, FilterProductForm,
+                        StartEndDateForm)
 
 from app.utils import (create_goods, update_goods, update_catalog, update_exchange_rate,
                        change_order_detail_fields, change_sale_detail_fields,
                        change_order_days_in_stock, change_sale_days_in_stock,
-                       product_list_for_import)
+                       product_list_for_import, get_month_list, get_month_goods_list)
 
 current_time = timezone.now()
 User = get_user_model()
@@ -302,6 +303,11 @@ def stock_list(request):
                  filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
                             Q(order_detail__goods__sale_date__sale_date__isnull=True))),
     cost_wait=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
+                 filter=Q(order_detail__goods__received_date__received_date__isnull=True)),
+    price_stock=Sum('price_RUB',
+                 filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                            Q(order_detail__goods__sale_date__sale_date__isnull=True))),
+    price_wait=Sum('price_RUB',
                  filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('-count_stock')
     total_count_stock = Goods.objects.filter(
         Q(received_date__received_date__isnull=False) &
@@ -314,16 +320,24 @@ def stock_list(request):
             Q(received_date__received_date__isnull=False) &
             Q(sale_date__sale_date__isnull=True))),
         cost_wait=Sum('cost_price_RUB__cost_price_RUB', filter=(
-            Q(received_date__received_date__isnull=True))))
-    total_cost_stock = total_list.aggregate(
-        total_cost_stock=Sum('cost_stock'))['total_cost_stock']
-    total_cost_wait = total_list.aggregate(
-        total_cost_wait=Sum('cost_wait'))['total_cost_wait']
+            Q(received_date__received_date__isnull=True))),
+        price_stock=Sum('price_RUB__price_RUB', filter=(
+            Q(received_date__received_date__isnull=False) &
+            Q(sale_date__sale_date__isnull=True))),
+        price_wait=Sum('price_RUB__price_RUB', filter=(
+            Q(received_date__received_date__isnull=True)))
+        )
+    total_cost_stock = sum(item.cost_stock if item.cost_stock is not None else 0 for item in total_list)
+    total_cost_wait = sum(item.cost_wait if item.cost_wait is not None else 0 for item in total_list)
+    total_price_stock = sum(item.price_stock if item.price_stock is not None else 0 for item in total_list)
+    total_price_wait = sum(item.price_wait if item.price_wait is not None else 0 for item in total_list)
     context = {'stock_list': stock_list,
                'total_count_stock': total_count_stock,
                'total_cost_stock': total_cost_stock,
+               'total_price_stock': total_price_stock,
                'total_count_wait': total_count_wait,
-               'total_cost_wait': total_cost_wait}
+               'total_cost_wait': total_cost_wait,
+               'total_price_wait': total_price_wait}
     return render(request, template, context)
 
 
@@ -430,9 +444,6 @@ def sale_add(request):
 
 @login_required
 def sales_list(request):
-    current_date = datetime.now()
-    current_month = current_date.month
-    current_year = current_date.year
     template = 'app/sales_list.html'
     sales_list = Sales.objects.select_related(
         'created_by', 'payment_type', 'receiving_type', 'client_type').filter(
@@ -440,28 +451,40 @@ def sales_list(request):
     paginator = Paginator(sales_list, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    current_date = datetime.now()
+    month = current_date.month
+    year = current_date.year
+    _, last_day = calendar.monthrange(year, month)
+    start_date = datetime(year, month, 1).date()
+    end_date = datetime(year, month, last_day).date()
+
     count_sales = Sales.objects.filter(
-        sale_date__month=current_month,
-        sale_date__year=current_year
-        ).values('id').count()
-    goods_list = Goods.objects.filter(
-        sale_date__sale_date__month=current_month,
-        sale_date__sale_date__year=current_year
-        ).aggregate(
-        count_goods=Count('id'),
-        sum_sale=Sum('sale_price_RUB__sale_price_RUB'),
-        sum_margin=Sum('margin')
-        )
-    total_margin = goods_list['sum_margin'] / goods_list['sum_sale']*100
-    total_markup = (goods_list['sum_sale'] / (goods_list['sum_sale'] - goods_list['sum_margin']) - 1) *100
+       sale_date__gte=start_date,
+       sale_date__lte=end_date
+       ).values('id').count()
+    goods_list = get_month_goods_list(start_date, end_date)
+    start_end_date_form = StartEndDateForm(request.POST or None)
     context = {'page_obj': page_obj,
                'goods_list': goods_list,
                'current_date': current_date,
                'count_sales': count_sales,
-               'total_margin': total_margin,
-               'total_markup': total_markup}
+               'start_end_date_form': start_end_date_form
+               }
+    if request.method == 'POST':
+        if start_end_date_form.is_valid():
+            start_date = start_end_date_form.cleaned_data['start_date']
+            end_date = start_end_date_form.cleaned_data['end_date']
+            month_list = get_month_list(start_date, end_date)
+            goods_list = get_month_goods_list(start_date, end_date)
+            context['month_list'] = month_list
+            context['goods_list'] = goods_list
+    if goods_list['count_goods'] > 0:
+        total_margin = goods_list['sum_margin'] / goods_list['sum_sale']*100
+        total_markup = (goods_list['sum_sale'] / (goods_list['sum_sale'] - goods_list['sum_margin']) - 1) *100
+        context['total_margin'] = total_margin
+        context['total_markup'] = total_markup
     return render(request, template, context)
-
 
 @login_required
 def sale_detail(request, pk):
@@ -473,6 +496,7 @@ def sale_detail(request, pk):
         'sale_date_id__sale_date',
         'quantity',
         'id',
+        'product',
         'product__title',
         'sale_price_RUB')
     sale_info = get_object_or_404(Sales, sale_number=pk)

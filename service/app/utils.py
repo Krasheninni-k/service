@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from django.db.models import Max, Sum, F
+from django.db.models import Max, Sum, F, Count
 
 from app.models import Goods, Orders, OrderDetail, Catalog, Sales, SaleDetail, CustomSettings
 
@@ -27,6 +27,7 @@ def create_goods(order, order_detail, quantity):
             order_date=order,
             created_by=order.created_by,
             product=order_detail,
+            price_RUB=order_detail.product,
             cost_price_RUB=order_detail,
             ordering_price_RMB=order_detail,
             received_date=order
@@ -171,3 +172,18 @@ def product_list_for_import(sale, sale_detail):
         product_list.append(f'{i.product} - {i.quantity} ед.')
     sale.product_list = ', '.join(str(item) for item in product_list)
     sale.save()
+
+def get_month_list(start_date, end_date):
+    month_list = Sales.objects.select_related(
+        'created_by', 'payment_type', 'receiving_type', 'client_type').filter(
+        is_published=True, sale_date__gte=start_date, sale_date__lte=end_date)
+    return(month_list)
+
+def get_month_goods_list(start_date, end_date):
+    month_goods_list = Goods.objects.filter(
+        sale_date__sale_date__gte=start_date, sale_date__sale_date__lte=end_date).aggregate(
+        count_goods=Count('id'),
+        sum_sale=Sum('sale_price_RUB__sale_price_RUB'),
+        sum_margin=Sum('margin')
+        )
+    return(month_goods_list)
