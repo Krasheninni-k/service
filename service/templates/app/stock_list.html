@@ -7,7 +7,7 @@
     <div class="card" style="width: 60rem;">
       <div class="card-header">
         <div class="row">
-          <div class="col-md-2">
+          <div class="col-md-4">
               <br><b>Наличие:</b>
               <br><b>Ожидание:</b>
           </div>
@@ -33,18 +33,19 @@
           <thead>
             <tr>
               <th>Продукт</th>
-              <th>В наличии</th>
-              <th>Себестоимость</th>
-              <th>Цена продажи</th>
-              <th>В ожидании</th>
-              <th>Себестоимость</th>
-              <th>Цена продажи</th>
+              <th style="width: 80px;">Наличие</th>
+              <th style="width: 80px;">Себест</th>
+              <th style="width: 80px;">Цена</th>
+              <th style="width: 80px;">Ожидание</th>
+              <th style="width: 80px;">Себест</th>
+              <th style="width: 80px;">Цена</th>
             </tr>
           </thead>
           <tbody> 
             {% for i in stock_list %}
               <tr>
-                <td>{{ i.title }}</td>
+                <td style="vertical-align: middle;">
+                  <a class="btn" href="{% url 'app:catalog_detail' i.id %}" style="display: inline-block; text-align: left;">{{ i.title }}</a></td>
                 <td>{{ i.count_stock }}</td>
                 <td>{% if i.cost_stock %} {{ i.cost_stock }} {% endif %}</td>
                 <td>{% if i.price_stock %} {{ i.price_stock }} {% endif %}</td>

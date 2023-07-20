@@ -26,7 +26,9 @@
         <tbody> 
           {% for catalog in page_obj %}
             <tr>
-              <td>{{ catalog.title }}</td>
+              <td style="vertical-align: middle;"><a class="btn" 
+                href="{% url 'app:catalog_detail' catalog.id %}"
+                style="display: inline-block; text-align: left;">{{ catalog.title }}</a></td>
               <td>{{ catalog.count_stock }}</td>
               <td>{{ catalog.count_wait }}</td>
               <td>{{ catalog.price_RUB|floatformat:0 }}</td>

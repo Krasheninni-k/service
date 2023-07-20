@@ -54,7 +54,8 @@
         <tbody> 
           {% for i in sale_info_detail %}
             <tr>
-              <td style="vertical-align: middle;"><a class="btn" href="{% url 'app:catalog_detail' i.product %}">{{ i.product__title }}</a></td>
+              <td style="vertical-align: middle;"><a class="btn" 
+                href="{% url 'app:catalog_detail' i.product %}" style="display: inline-block; text-align: left;">{{ i.product__title }}</a></td>
               <td style="vertical-align: middle;">{{ i.quantity }}</td>
               <td style="vertical-align: middle;">{{ i.sale_price_RUB }}</td>
               <td style="vertical-align: middle;"><a class="btn btn-sm text-muted" href="{% url 'app:sale_detail_edit' i.sale_number_id__sale_number i.id %}" role="button">

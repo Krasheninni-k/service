@@ -1,4 +1,4 @@
-asgiref==3.5.2
+asgiref==3.4.1
 attrs==22.2.0
 beautifulsoup4==4.11.2
 colorama==0.4.6

@@ -560,17 +560,18 @@ def goods_list(request):
         is_published=True).values(
         'order_number__order_number', 'order_date__order_date',
         'received_date__received_date', 'cost_price_RUB__cost_price_RUB',
-        'product__product__title', 'sale_date__sale_date',
-        'sale_price_RUB__sale_price_RUB').order_by('order_number')
-    if request.method == 'POST':
-        form_product = FilterProductForm(request.POST)
-        if form_product.is_valid():
-            product = form_product.cleaned_data['product']
-            goods_list = goods_list.filter(product__product=product)
+        'product__product__title', 'product__product', 'sale_date__sale_date',
+        'sale_price_RUB__sale_price_RUB', 'markup').order_by('order_number')
     paginator = Paginator(goods_list, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     context = {'page_obj': page_obj, 'form_product': form_product}
+    if request.method == 'POST':
+        form_product = FilterProductForm(request.POST)
+        if form_product.is_valid():
+            product = form_product.cleaned_data['product']
+            goods_list_detail = goods_list.filter(product__product=product)
+            context['goods_list_detail'] = goods_list_detail
     return render(request, template, context)
 
 

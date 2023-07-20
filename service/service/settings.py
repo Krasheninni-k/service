@@ -8,7 +8,7 @@ SECRET_KEY = 'django-insecure-d%#ixibc8%9k7d+*==&8n#1&*t_t8kgyy%+kd9t-t-tphnzy2n
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', ]
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'dji.pythonanywhere.com/', 'www.dji.pythonanywhere.com/',]
 
 INSTALLED_APPS = [
     'app.apps.MyAppConfig',
@@ -35,7 +35,7 @@ MIDDLEWARE = [
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
-ROOT_URLCONF = 'blogicum.urls'
+ROOT_URLCONF = 'service.urls'
 
 TEMPLATES_DIR = BASE_DIR / 'templates'
 
@@ -57,7 +57,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'blogicum.wsgi.application'
+WSGI_APPLICATION = 'service.wsgi.application'
 
 DATABASES = {
     'default': {
@@ -114,4 +114,5 @@ INTERNAL_IPS = [
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 USE_THOUSAND_SEPARATOR = True
+
 THOUSAND_SEPARATOR = ' '

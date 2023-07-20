@@ -31,25 +31,50 @@
             <th style="width: 100px;">Получено</th>
             <th style="width: 100px;">Продано</th>
             <th>Себест.</th>
-            <th>Цена продажи</th>
+            <th>Цена</th>
+            <th>Наценка, %</th>
           </tr>
         </thead>
         <tbody> 
-          {% for i in page_obj %}
+          {% if goods_list_detail is not None %}
+          {% for i in goods_list_detail %}
             <tr>
               <td>{{ i.order_number__order_number }}</td>
-              <td>{{ i.product__product__title }}</td>
+              <td style="vertical-align: middle;"><a class="btn" 
+                href="{% url 'app:catalog_detail' i.product__product %}"
+                style="display: inline-block; text-align: left;">
+                {{ i.product__product__title }}</a></td>
               <td>{{ i.order_date__order_date|date:"d-m-Y" }}</td>
               <td>{{ i.received_date__received_date|date:"d-m-Y" }}</td>
               <td>{{ i.sale_date__sale_date|date:"d-m-Y" }}</td>
               <td>{{ i.cost_price_RUB__cost_price_RUB|floatformat:-2 }}</td>
               <td>{{ i.sale_price_RUB__sale_price_RUB|floatformat:-2 }}</td>
+              <td>{% if i.markup != 0 %}{{ i.markup }}{% endif %}</td>
             </tr>
           {% endfor %}
+          {% else%}
+          {% for i in page_obj %}
+          <tr>
+            <td>{{ i.order_number__order_number }}</td>
+            <td style="vertical-align: middle;"><a class="btn"
+              href="{% url 'app:catalog_detail' i.product__product %}" 
+              style="display: inline-block; text-align: left;">
+              {{ i.product__product__title }}</a></td>
+            <td>{{ i.order_date__order_date|date:"d-m-Y" }}</td>
+            <td>{{ i.received_date__received_date|date:"d-m-Y" }}</td>
+            <td>{{ i.sale_date__sale_date|date:"d-m-Y" }}</td>
+            <td>{{ i.cost_price_RUB__cost_price_RUB|floatformat:-2 }}</td>
+            <td>{{ i.sale_price_RUB__sale_price_RUB|floatformat:-2 }}</td>
+            <td>{% if i.markup != 0 %}{{ i.markup }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+        {% endif %}
         </tbody>
       </table>
     </div>
   </div>
 </div>
+{% if goods_list_detail is None %}
 {% include "includes/paginator.html" %}
+{% endif %}
 {% endblock %}
