@@ -1,7 +1,7 @@
 asgiref==3.4.1
 attrs==22.2.0
 beautifulsoup4==4.11.2
-colorama==0.4.6
+colorama==0.4.5
 Django==3.2.16
 django-bootstrap5==22.2
 django_debug_toolbar==3.8.1
