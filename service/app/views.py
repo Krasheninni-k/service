@@ -609,7 +609,7 @@ class UserUpdateView(UpdateView):
         return reverse('app:profile',
                        kwargs={'username': self.request.user.username})
     
-
+# Вносит изменения настроек: курс валюты, издержки доставки, нормы наценки
 @login_required
 def settings_edit(request):
     template = 'app/settings_edit.html'
