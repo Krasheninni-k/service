@@ -19,10 +19,17 @@
               <br>{% if goods_list.sum_sale is not None %}Маржа: {{ goods_list.sum_margin }} {% else %} {% endif %}
           </div>
           <div class="col-md-3">
+<<<<<<< HEAD
               <br>{% if goods_list.sum_sale is not None %}Маржинальность:
               <span class="{% if total_margin < 30 %}text-danger{% endif %}">
               {{ total_margin|floatformat:-2 }} % {% else %} {% endif %}</span>
               <br>{% if goods_list.sum_sale is not None %}Наценка:
+=======
+              <br>{% if goods_list.sum_sale is not None %}Маржинальность: 
+              <span class="{% if total_margin < 30 %}text-danger{% endif %}">
+              {{ total_margin|floatformat:-2 }} % {% else %} {% endif %}</span>
+              <br>{% if goods_list.sum_sale is not None %}Наценка: 
+>>>>>>> 985751095470161bf74212fb7816d493841e1bcc
               <span class="{% if total_markup < 42.8 %}text-danger{% endif %}">
               {{ total_markup|floatformat:-2 }} % {% else %} {% endif %}</span>
           </div>

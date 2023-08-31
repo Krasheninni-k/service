@@ -304,7 +304,7 @@ class Goods(BaseModel):
 
 class CustomSettings(models.Model):
     exchange_rate = models.DecimalField(
-        'Биржевой курс валюты (китайский юань)', max_digits=5, decimal_places=2, default=12.50)
+        'Биржевой курс валюты (китайский юань)', max_digits=7, decimal_places=4, default=12.5000)
     delivery_cost = models.DecimalField(
         'Средние издержки на доставку, %', max_digits=5, decimal_places=2, default=10)
     markup_128 = models.IntegerField('Наценка для товаров с себестом более 128к, %', default=25)
