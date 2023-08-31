@@ -60,8 +60,8 @@ def update_goods(sale_detail, quantity):
 # При каждой закупке изменяет Catalog: цену товара в юанях и расчетные цены от закупки и от текущего курса.
 def update_catalog(order_detail):
     if order_detail == OrderDetail.objects.last():
-        cost_price = int(order_detail.cost_price_RUB)
-        RMB_price = int(order_detail.ordering_price_RMB)
+        cost_price = float(order_detail.cost_price_RUB)
+        RMB_price = float(order_detail.ordering_price_RMB)
         product = get_object_or_404(Catalog, title=order_detail.product)
         product.order_price_RMB = RMB_price
         markup_obj, markup_dict = get_markup()

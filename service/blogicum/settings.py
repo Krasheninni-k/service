@@ -8,7 +8,7 @@ SECRET_KEY = 'django-insecure-d%#ixibc8%9k7d+*==&8n#1&*t_t8kgyy%+kd9t-t-tphnzy2n
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'dji.pythonanywhere.com/', 'www.dji.pythonanywhere.com/',]
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'djirobots.pythonanywhere.com', 'www.djirobots.pythonanywhere.com',]
 
 INSTALLED_APPS = [
     'app.apps.MyAppConfig',

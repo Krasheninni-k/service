@@ -38,7 +38,7 @@
             <h6 class="card-subtitle mb-2 text-muted">
               <small>
                 <br>
-                <br>
+                <p class="card-text">Курс юаня: {{ exchange_rate|floatformat:4 }}</span><br>
                 <p class="card-text">Габариты (д/ш/в): {{ product.length }} / {{ product.width }} / {{ product.height }} см<br>
                 Вес: {{ product.weight }} кг</p>
                 <p class="card-text">Цена в юанях: {{ product.order_price_RMB|floatformat:0 }} CNY</p>

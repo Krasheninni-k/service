@@ -26,8 +26,11 @@ from app.utils import (create_goods, update_goods, update_catalog, update_exchan
                        change_order_days_in_stock, change_sale_days_in_stock,
                        product_list_for_import, get_month_list, get_month_goods_list)
 
+from app.currency import change_prices
+
 current_time = timezone.now()
 User = get_user_model()
+
 
 def index(request):
     template = 'app/index.html'
@@ -200,6 +203,8 @@ def order_received(request, pk):
 # Каталог
 @login_required
 def catalog(request):
+    change_prices()
+    exchange_rate = CustomSettings.objects.last().exchange_rate
     template = 'app/catalog.html'
     catalog = Catalog.objects.select_related('created_by').filter(
         is_published=True).annotate(
@@ -213,7 +218,7 @@ def catalog(request):
     page_obj = paginator.get_page(page_number)
     count_product = Catalog.objects.select_related('created_by').filter(
         is_published=True).count
-    context = {'page_obj': page_obj, 'count_product': count_product}
+    context = {'page_obj': page_obj, 'count_product': count_product, 'exchange_rate': exchange_rate}
     return render(request, template, context)
 
 
@@ -233,6 +238,8 @@ def catalog_add(request):
 
 @login_required
 def catalog_detail(request, pk):
+    change_prices()
+    exchange_rate = CustomSettings.objects.last().exchange_rate
     template = 'app/catalog_detail.html'
     product = get_object_or_404(Catalog, pk=pk)
     product_count_stock = Goods.objects.filter(
@@ -260,7 +267,8 @@ def catalog_detail(request, pk):
     page_obj = paginator.get_page(page_number)
     context = {'product': product, 'page_obj': page_obj, 'order_list': order_list,
                'product_count_stock': product_count_stock,
-               'product_count_wait': product_count_wait}
+               'product_count_wait': product_count_wait,
+               'exchange_rate': exchange_rate}
     return render(request, template, context)
 
 
@@ -779,8 +787,10 @@ def import_catalog_data(request):
         df1 = pd.read_excel(decoded_file, sheet_name=0)
         for _, row in df1.iterrows():
             title = row['title']
+            price_RUB = row['price_RUB']
             instance = Catalog(
                 title=title,
+                price_RUB=price_RUB,
                 created_by=created_by)
             instance.save()
         df2 = pd.read_excel(decoded_file, sheet_name=1)

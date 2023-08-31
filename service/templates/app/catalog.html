@@ -6,7 +6,9 @@
 <div class="col d-flex justify-content-center">
   <div class="card" style="width: 60rem;">
     <div class="card-header d-flex justify-content-between">
-      <span>Каталог продукции: {{ count_product }} наименований</span>
+      <span>Каталог продукции: {{ count_product }} наименований
+      <br>
+      Курс юаня: {{ exchange_rate|floatformat:4 }}</span>
       <a class="btn btn-primary" href="{% url 'app:catalog_add' %}" role="button">Добавить товар</a>
     </div>
     <div class="card-body">
