@@ -308,7 +308,7 @@ def stock_list(request):
                  filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
                             Q(order_detail__goods__sale_date__sale_date__isnull=True))),
     price_wait=Sum('price_RUB',
-                 filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('-count_stock')
+                 filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('title')
     total_count_stock = Goods.objects.filter(
         Q(received_date__received_date__isnull=False) &
         Q(sale_date__sale_date__isnull=True)).values('id').count()
@@ -589,7 +589,7 @@ class UserDetailView(DetailView):
         settings = CustomSettings.objects.first()
         context['settings'] = settings
         return context
-    
+
 
 class UserUpdateView(UpdateView):
     model = get_user_model()
@@ -608,7 +608,7 @@ class UserUpdateView(UpdateView):
     def get_success_url(self):
         return reverse('app:profile',
                        kwargs={'username': self.request.user.username})
-    
+
 # Вносит изменения настроек: курс валюты, издержки доставки, нормы наценки
 @login_required
 def settings_edit(request):
