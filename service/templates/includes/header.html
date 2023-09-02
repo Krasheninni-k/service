@@ -2,7 +2,7 @@
 <header>
   <nav class="navbar navbar-light" style="background-color: lightskyblue">
     <div class="container">
-      <a class="navbar-brand" href="{% url 'app:index' %}">
+      <a class="navbar-brand" href="{% url 'index' %}">
     <img src="{% static 'img/logo_new.png' %}" width="30" height="30" class="d-inline-block align-top" alt="">
         DJI Robots
       </a>
@@ -27,7 +27,11 @@
                 href="{% url 'app:catalog' %}">Каталог</a></button>
 
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
-                href="{% url 'app:profile' user.username %}">{{ user.username }}</a></button>
+                  href="{% url 'pages:faq' %}">FAQ</a></button>
+
+              <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
+                    href="{% url 'profile' user.username %}">{{ user.username }}</a></button>
+
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
                 href="{% url 'logout' %}">Выйти</a></button>
             </div>

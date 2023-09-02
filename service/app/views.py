@@ -602,7 +602,7 @@ class UserDetailView(DetailView):
 class UserUpdateView(UpdateView):
     model = get_user_model()
     fields = 'first_name', 'last_name', 'email'
-    success_url = reverse_lazy('app:index')
+    success_url = reverse_lazy('index')
     slug_field = 'username'
     slug_url_kwarg = 'username'
     template_name = 'app/user.html'
@@ -614,7 +614,7 @@ class UserUpdateView(UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
-        return reverse('app:profile',
+        return reverse('profile',
                        kwargs={'username': self.request.user.username})
 
 # Вносит изменения настроек: курс валюты, издержки доставки, нормы наценки
@@ -627,7 +627,7 @@ def settings_edit(request):
         if form.is_valid():
             form.save()
             update_exchange_rate(settings.exchange_rate)
-            return redirect('app:profile', username=request.user.username)
+            return redirect('profile', username=request.user.username)
     context = {'form': form}
     return render(request, template, context)
 

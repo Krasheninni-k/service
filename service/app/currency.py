@@ -28,9 +28,6 @@ def change_prices():
     print(CURRENCY_TIME)
     timestamp = int(time.time())
     if timestamp > CURRENCY_TIME + 3600:
-        print(CURRENCY_TIME)
-        print(timestamp)
         CURRENCY_TIME = timestamp
-        print(CURRENCY_TIME)
         exchange_rate = get_currency_rate()
         update_exchange_rate(exchange_rate)

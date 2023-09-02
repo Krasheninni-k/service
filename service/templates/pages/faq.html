@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}
+  Часто задаваемые вопросы
+{% endblock %}
+{% block content %}
+<body>
+    <div class="container mt-5">
+        <h1>Часто задаваемые вопросы</h1>
+        <div class="accordion" id="faqAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question1">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#answer1" aria-expanded="true" aria-controls="answer1">
+                        Вопрос 1: Можно ли отредактировать информацию о продаже?
+                    </button>
+                </h2>
+                <div id="answer1" class="accordion-collapse collapse" aria-labelledby="question1" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Да, можно отредактировать любое поле продажи, кроме полей "Количество наименований" и "Количество единиц товара".
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question2">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answer2" aria-expanded="false" aria-controls="answer2">
+                        Вопрос 2: Когда обновляется курс валюты?
+                    </button>
+                </h2>
+                <div id="answer2" class="accordion-collapse collapse" aria-labelledby="question2" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Курс валюты обновляется при переходе в <a  href="{% url 'app:catalog' %}">каталог</a> или карточку товара. Новое обновление происходит не ранее, чем через час после предыдущего.
+                        После обновления курса автоматически пересчитываются расчетные цены всех позиций каталога (поле "Расчет от курса").
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question3">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#answer3" aria-expanded="true" aria-controls="answer3">
+                        Вопрос 3: Что такое "Прайс" в карточке товара?
+                    </button>
+                </h2>
+                <div id="answer3" class="accordion-collapse collapse" aria-labelledby="question3" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                       Это цена магазина по прайсу. Она должна соответствовать цене на Авито. При изменении цены на Авито поле необходимо отредактировать.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question4">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answer4" aria-expanded="false" aria-controls="answer4">
+                        Вопрос 4: Что такое "Рынок" в карточке товара?
+                    </button>
+                </h2>
+                <div id="answer4" class="accordion-collapse collapse" aria-labelledby="question4" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Это рыночная цена на товар. Актуализируется не реже 1 раза в 2 недели по результатам мониторинга рынка.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question5">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#answer5" aria-expanded="true" aria-controls="answer5">
+                        Вопрос 5: Что такое "Расчет от закупки" в карточке товара?
+                    </button>
+                </h2>
+                <div id="answer5" class="accordion-collapse collapse" aria-labelledby="question5" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                       Это расчетная цена на товар, которая учитывает его последнюю фактическую себестоимость.
+                       <br>Определяется по формуле 30 000 * (1 + 40%) = 42 000 руб., где:
+                       <br>30 000 - фактическая себестоимость последней закупки в рублях,
+                       <br>40% - <a href="{% url 'profile' user.username %}">норма наценки</a>, соответствующая данной себестоимости.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question6">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answer6" aria-expanded="false" aria-controls="answer6">
+                        Вопрос 6: Что такое "Расчет от курса" в карточке товара?
+                    </button>
+                </h2>
+                <div id="answer6" class="accordion-collapse collapse" aria-labelledby="question6" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Это расчетная цена на товар, которая учитывет текущий курс валюты. 
+                        <br>Определяется по формуле 2 200 * (1 +10%) *12,5 * (1 + 40%) = 42 350 руб., где:
+                       <br>2 200 - текущая цена товара в юанях,
+                       <br>10% - издержки на оплату и доставку,
+                       <br>12,5 - текущий курс юаня,
+                       <br>40% - <a href="{% url 'profile' user.username %}">норма наценки</a>, соответствующая данной себестоимости.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question7">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#answer7" aria-expanded="true" aria-controls="answer7">
+                        Вопрос 7: Когда нужно проверять и сравнивать цены?
+                    </button>
+                </h2>
+                <div id="answer7" class="accordion-collapse collapse" aria-labelledby="question7" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                       1. После каждой продажи,
+                       <br>2. После запроса цены от клиента,
+                       <br>3. Во время мониторинга рынка.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question8">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answer8" aria-expanded="false" aria-controls="answer8">
+                        Вопрос 8: Когда нужно поднимать цены?
+                    </button>
+                </h2>
+                <div id="answer8" class="accordion-collapse collapse" aria-labelledby="question8" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                       1. Если наблюдается всплеск спроса на товар,
+                       <br>2. Если рыночная цена выше цены по прайсу,
+                       <br>3. Если расчетная цена от курса сильно выше цены по прайсу.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question9">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#answer9" aria-expanded="true" aria-controls="answer1">
+                        Вопрос 9: Когда нужно снижать цены?
+                    </button>
+                </h2>
+                <div id="answer9" class="accordion-collapse collapse" aria-labelledby="question9" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                       1. Если товар более месяца не продается, и цена по прайсу не в рынке,
+                       <br>2. Если рыночная цена сильно ниже цены по прайсу,
+                       <br>3. Если расчетная цена от курса сильно ниже цены по прайсу.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question10">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answer10" aria-expanded="false" aria-controls="answer10">
+                        Вопрос10: Какие ключевые показатели продаж? Какие нормативы продаж?
+                    </button>
+                </h2>
+                <div id="answer10" class="accordion-collapse collapse" aria-labelledby="question10" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                       1. Клюевые показатели: выручка (руб.), маржа (руб.), наценка (%), маржинальность (%).
+                       <br>2. Месячные нормативы: выручка = 2 млн, маржинальность = 30%, наценка = 42,85%.
+                       <br>3. Единичные нормативы: <a href="{% url 'profile' user.username %}">норма наценки</a> на товар зависит от его себестоимости и колеблется от 25 до 120%.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключение Bootstrap 5 JavaScript (Popper.js и Bootstrap.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+{% endblock %}
