@@ -1,5 +1,5 @@
 from pathlib import Path
-import locale
+import locale, os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -97,9 +97,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 STATIC_URL = '/static/'
 
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-STATICFILES_DIRS = [BASE_DIR / 'static', ]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 LOGIN_REDIRECT_URL = 'app:index'
 

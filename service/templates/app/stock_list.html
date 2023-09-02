@@ -18,15 +18,6 @@
           </div>
           <div class="col-md-3">
             <b>Общий себест</b>
-<<<<<<< HEAD
-            <br>{% if total_cost_stock %} {{ total_cost_stock|floatformat:0 }} руб.{% endif %}
-            <br>{% if total_cost_wait %} {{ total_cost_wait|floatformat:0 }} руб.{% endif %}
-          </div>
-          <div class="col-md-4">
-            <b>Общая стоимость</b>
-            <br>{% if total_price_stock %} {{ total_price_stock|floatformat:0 }} руб.{% endif %}
-            <br>{% if total_price_wait %} {{ total_price_wait|floatformat:0 }} руб.{% endif %}
-=======
             <br>{% if total_cost_stock %} {{ total_cost_stock|floatformat:-2 }} руб.{% endif %}
             <br>{% if total_cost_wait %} {{ total_cost_wait|floatformat:-2 }} руб.{% endif %}
           </div>
@@ -34,7 +25,6 @@
             <b>Общая стоимость</b>
             <br>{% if total_price_stock %} {{ total_price_stock|floatformat:-2 }} руб.{% endif %}
             <br>{% if total_price_wait %} {{ total_price_wait|floatformat:-2 }} руб.{% endif %}
->>>>>>> 985751095470161bf74212fb7816d493841e1bcc
           </div>
         </div>
       </div>
@@ -57,37 +47,21 @@
                 <td style="vertical-align: middle;">
                   <a class="btn" href="{% url 'app:catalog_detail' i.id %}" style="display: inline-block; text-align: left;">{{ i.title }}</a></td>
                 <td>{{ i.count_stock }}</td>
-<<<<<<< HEAD
-                <td>{% if i.cost_stock %} {{ i.cost_stock|floatformat:0 }} {% endif %}</td>
-                <td>{% if i.price_stock %} {{ i.price_stock|floatformat:0 }} {% endif %}</td>
-                <td>{{ i.count_wait }}</td>
-                <td>{% if i.cost_wait %} {{ i.cost_wait|floatformat:0 }} {% endif %}</td>
-                <td>{% if i.price_wait %} {{ i.price_wait|floatformat:0 }} {% endif %}</td>
-=======
                 <td>{% if i.cost_stock %} {{ i.cost_stock|floatformat:-2 }} {% endif %}</td>
                 <td>{% if i.price_stock %} {{ i.price_stock|floatformat:-2 }} {% endif %}</td>
                 <td>{{ i.count_wait }}</td>
                 <td>{% if i.cost_wait %} {{ i.cost_wait|floatformat:-2 }} {% endif %}</td>
                 <td>{% if i.price_wait %} {{ i.price_wait|floatformat:-2 }} {% endif %}</td>
->>>>>>> 985751095470161bf74212fb7816d493841e1bcc
               </tr>
             {% endfor %}
             <tr>
               <th></th>
               <th>{{ total_count_stock }}</th>
-<<<<<<< HEAD
-              <th>{% if total_cost_stock %} {{ total_cost_stock|floatformat:0 }} {% endif %}</th>
-              <th>{% if total_price_stock %} {{ total_price_stock|floatformat:0 }} {% endif %}</th>
-              <th>{{ total_count_wait }}</th>
-              <th>{% if total_cost_wait %} {{ total_cost_wait|floatformat:0 }} {% endif %}</th>
-              <th>{% if total_price_wait %} {{ total_price_wait|floatformat:0 }} {% endif %}</th>
-=======
               <th>{% if total_cost_stock %} {{ total_cost_stock|floatformat:-2 }} {% endif %}</th>
               <th>{% if total_price_stock %} {{ total_price_stock|floatformat:-2 }} {% endif %}</th>
               <th>{{ total_count_wait }}</th>
               <th>{% if total_cost_wait %} {{ total_cost_wait|floatformat:-2 }} {% endif %}</th>
               <th>{% if total_price_wait %} {{ total_price_wait|floatformat:-2 }} {% endif %}</th>
->>>>>>> 985751095470161bf74212fb7816d493841e1bcc
             </tr>
           </tbody>
         </table>
