@@ -25,6 +25,7 @@ def get_markup():
         default_markup_dict = {(0, float('inf')): 40,}
         return default_markup_obj, default_markup_dict
 
+
 # При создании заказа создает объеты Goods на каждый товар заказа.
 def create_goods(order, order_detail, quantity):
     for i in range(quantity):
