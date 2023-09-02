@@ -1,5 +1,5 @@
 from pathlib import Path
-import locale
+import locale, os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -38,8 +38,6 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'blogicum.urls'
 
 TEMPLATES_DIR = BASE_DIR / 'templates'
-
-STATICFILES_DIRS = [BASE_DIR / 'static_dev', ]
 
 TEMPLATES = [
     {
@@ -93,11 +91,15 @@ USE_L10N = True
 
 USE_TZ = True
 
-STATIC_URL = '/static/'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_ROOT = BASE_DIR / 'media'
+
+STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 LOGIN_REDIRECT_URL = 'app:index'
 

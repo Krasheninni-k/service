@@ -3,7 +3,7 @@
   <nav class="navbar navbar-light" style="background-color: lightskyblue">
     <div class="container">
       <a class="navbar-brand" href="{% url 'app:index' %}">
-        <img src="{% static 'img/log_1.png' %}" width="30" height="30" class="d-inline-block align-top" alt="">
+    <img src="{% static 'img/logo_new.png' %}" width="30" height="30" class="d-inline-block align-top" alt="">
         DJI Robots
       </a>
       {% with request.resolver_match.view_name as view_name %}
@@ -25,7 +25,7 @@
 
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
                 href="{% url 'app:catalog' %}">Каталог</a></button>
-                  
+
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
                 href="{% url 'app:profile' user.username %}">{{ user.username }}</a></button>
               <button type="button" class="btn btn-outline-primary"><a class="text-decoration-none text-reset"
