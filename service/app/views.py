@@ -19,7 +19,7 @@ from app.forms import (OrderForm, OrderDetailForm, SaleForm, SaleDetailForm,
                         ReceivedForm, EditDeleteOrderForm, EditOrderDetailForm,
                         CatalogForm, SaleEditDeleteForm, SaleEditDetailForm,
                         CustomSettingsForm, FilterProductForm,
-                        StartEndDateForm)
+                        StartEndDateForm, MonthForm)
 
 from app.utils import (create_goods, update_goods, update_catalog, update_exchange_rate,
                        change_order_detail_fields, change_sale_detail_fields,
@@ -384,9 +384,11 @@ def sale_detail_add(request):
                 receiving_type=receiving_type,
                 client_name=client_name,
                 client_contact=client_contact,
-                comment=comment,
                 regular_client=regular_client
             )
+            if comment != "None":
+                sale.comment = comment
+                sale.save()
             for i in range(quantity_name):
                 quantity = int(request.POST.get(
                     'form_' + str(i+1) + '-quantity'))
@@ -602,7 +604,7 @@ class UserDetailView(DetailView):
 class UserUpdateView(UpdateView):
     model = get_user_model()
     fields = 'first_name', 'last_name', 'email'
-    success_url = reverse_lazy('index')
+    success_url = reverse_lazy('app:index')
     slug_field = 'username'
     slug_url_kwarg = 'username'
     template_name = 'app/user.html'
@@ -818,3 +820,19 @@ def import_catalog_data(request):
         return render(request, 'app/import_success.html')
 
     return render(request, template)
+
+# Дашборд
+@login_required
+def dashboard(request):
+    template = 'app/dashboard.html'
+    month_form = MonthForm(request.POST or None)
+    context = {'month_form': month_form}
+    if request.method == 'POST':
+        if month_form.is_valid():
+            month = datetime.fromisoformat(month_form.cleaned_data['month'])
+            #sales_list = Sales.objects.filter(sale_date__month=month)
+            #context['sales_list'] = sales_list
+            count_sales = Sales.objects.filter(
+                sale_date__month=month.month, sale_date__year=month.year).count()
+            context['count_sales'] = count_sales
+    return render(request, template, context)

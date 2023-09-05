@@ -2,6 +2,8 @@ from django import forms
 from datetime import date
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from .models import (Orders, OrderDetail, Catalog, Sales, SaleDetail, Goods,
                       Client_type, Payment_type, Receiving_type, CustomSettings)
@@ -210,3 +212,19 @@ class StartEndDateForm(forms.Form):
         required=False,
         widget=forms.DateInput(attrs={'type':'date', 'class': 'form-control'})
         )
+
+
+# Форма для выбора отчетного месяца.
+class MonthForm(forms.Form):
+    start_date = Sales.objects.last().sale_date
+    end_date = Sales.objects.first().sale_date
+    months_between_dates = []
+    current_date = end_date
+    while current_date >= start_date:
+        months_between_dates.append((current_date, current_date.strftime('%B %Y')))
+        current_date -= relativedelta(months=1)
+
+    month = forms.ChoiceField(
+        choices=months_between_dates,
+        label='Выберите месяц'
+    )

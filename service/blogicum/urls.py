@@ -19,7 +19,6 @@ urlpatterns = [
         success_url=reverse_lazy('pages:about'),),
         name='registration',
     ),
-    path('', views.index, name='index'),
     path('profile/<slug:username>/', views.UserDetailView.as_view(),
           name='profile'),
     path('profile/<slug:username>/edit_profile/',

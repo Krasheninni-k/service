@@ -5,6 +5,7 @@ from app import views
 app_name = 'app'
 
 urlpatterns = [
+     path('', views.index, name='index'),
      # Закупки
      path('order_add/', views.order_add,
           name='order_add'),
@@ -59,4 +60,6 @@ urlpatterns = [
      path('import/orders/', views.import_orders_data, name='import_orders_data'),
      path('import/sales/', views.import_sales_data, name='import_sales_data'),
      path('import/catalog/', views.import_catalog_data, name='import_catalog_data'),
+     # Дашборд
+     path('dashboard/', views.dashboard, name='dashboard'),
 ]

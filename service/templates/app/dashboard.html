@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+{% block title %}
+Дашборд
+{% endblock %}
+{% block content %}
+  <div class="col d-flex justify-content-center">
+    <div class="card" style="width: 60rem;">
+      <div class="card-header">
+        <div class="row">
+          <div class="col-md-3">
+            <span><b>{% if month_list %} {{ month_list.0.sale_date|date:"F" }} {% else %} {{ current_date|date:"F" }} {% endif %}</b>
+              <br>Количество продаж: {{ count_sales }}
+              <br>Продано товаров: {{ goods_list.count_goods }}
+              <br>
+          </div>
+          <div class="col-md-3">
+              <br>{% if goods_list.sum_sale is not None %}Сумма продаж: {{ goods_list.sum_sale }} {% else %} {% endif %}
+              <br>{% if goods_list.sum_sale is not None %}Маржа: {{ goods_list.sum_margin }} {% else %} {% endif %}
+          </div>
+          <div class="col-md-3">
+              <br>{% if goods_list.sum_sale is not None %}Маржинальность:
+              <span class="{% if total_margin < 30 %}text-danger{% endif %}">
+              {{ total_margin|floatformat:-2 }} % {% else %} {% endif %}</span>
+              <br>{% if goods_list.sum_sale is not None %}Наценка:
+              <span class="{% if total_markup < 42.8 %}text-danger{% endif %}">
+              {{ total_markup|floatformat:-2 }} % {% else %} {% endif %}</span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <br><b> Список продаж: </b>
+              <br><form method="post" enctype="multipart/form-data"
+              id="myForm" class="form-inline d-flex">
+                {% csrf_token %}
+                {% bootstrap_form month_form %}
+                {% bootstrap_button button_type="submit" content="Выбрать" %}
+              </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
