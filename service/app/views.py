@@ -389,6 +389,9 @@ def sale_detail_add(request):
             if comment != "None":
                 sale.comment = comment
                 sale.save()
+            if (sale.payment_type == Payment_type.objects.get(title='Наличные') or
+                sale.payment_type == Payment_type.objects.get(title='Перевод')):
+                sale.cash = False
             for i in range(quantity_name):
                 quantity = int(request.POST.get(
                     'form_' + str(i+1) + '-quantity'))
@@ -557,6 +560,14 @@ def sale_detail_edit(request, **kwargs):
             change_sale_detail_fields(instance)
             return redirect('app:sale_detail', pk=sale_number)
     return render(request, template, context)
+
+
+@login_required
+def sale_change_cash(request, pk):
+    sale = get_object_or_404(Sales, pk=pk)
+    sale.cash = not sale.cash
+    sale.save()
+    return redirect('app:sales_list')
 
 
 @login_required
@@ -821,7 +832,7 @@ def import_catalog_data(request):
 
     return render(request, template)
 
-# Дашборд
+# Дашборд (в разработке)
 @login_required
 def dashboard(request):
     template = 'app/dashboard.html'

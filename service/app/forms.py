@@ -144,7 +144,7 @@ class SaleForm(forms.ModelForm):
 
     class Meta:
         model = Sales
-        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price')
+        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'cash')
         widgets = {
             'comment': forms.Textarea(attrs={'cols': '40', 'rows': '3'})}
 

@@ -54,6 +54,8 @@ urlpatterns = [
           name='sale_edit'),
      path('sales/<int:sale_number>/edit/<int:pk>', views.sale_detail_edit,
           name='sale_detail_edit'),
+     path('sales/<int:pk>/change_cash/', views.sale_change_cash,
+          name='sale_change_cash'),
      # Пользовательские настройки
      path('settings_edit/',
           views.settings_edit, name='settings_edit'),

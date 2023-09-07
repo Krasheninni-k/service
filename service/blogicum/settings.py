@@ -1,12 +1,12 @@
 from pathlib import Path
-import locale, os
+import locale
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 SECRET_KEY = 'django-insecure-d%#ixibc8%9k7d+*==&8n#1&*t_t8kgyy%+kd9t-t-tphnzy2n'
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'djirobots.pythonanywhere.com', 'www.djirobots.pythonanywhere.com',]
 
@@ -97,7 +97,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 STATIC_URL = '/static/'
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 LOGIN_REDIRECT_URL = 'app:index'
 

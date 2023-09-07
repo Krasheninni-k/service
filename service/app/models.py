@@ -175,6 +175,7 @@ class Sales(BaseModel):
     client_contact = models.CharField('Контакт', max_length=256, null=True)
     regular_client = models.BooleanField('Повторное обращение', default=False)
     comment = models.CharField('Комментарий', max_length=256, null=True, blank=True)
+    cash = models.BooleanField('Касса', default=True)
 
     class Meta:
         verbose_name = 'Продажа'

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
+{% load static %}
 {% block title %}
 Продажи
 {% endblock %}
@@ -75,12 +76,12 @@
         <table class="table">
           <thead>
             <tr>
+              <th>К</th>
               <th>№</th>
-              <th style="width: 120px;">Дата</th>
+              <th style="width: 150px;">Дата</th>
               <th style="width: 300px;">Состав продажи</th>
               <th>Сумма сделки</th>
               <th>Имя клиента</th>
-              <th>Тип клиента</th>
               <th>Способ оплаты</th>
               <th>Способ получения</th>
             </tr>
@@ -89,12 +90,20 @@
             {% if month_list is not None %}
             {% for sale in month_list %}
             <tr>
+              <td>
+              {% if sale.cash %}
+              <a href="{% url 'app:sale_change_cash' sale.id %}">
+              <img src="{% static 'img/done.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+              </a>
+              {% else %}
+              <img src="{% static 'img/in_progress.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+              {% endif %}
+              </td>
               <td>{{ sale.sale_number }}</td>
               <td>{{ sale.sale_date|date:"d-m-Y" }}</td>
               <td>{{ sale.product_list }}</td>
               <td>{{ sale.total_price|floatformat:-2 }}</td>
               <td>{{ sale.client_name }}</td>
-              <td>{{ sale.client_type }}</td>
               <td>{{ sale.payment_type }}</td>
               <td>{{ sale.receiving_type }}</td>
               <td>
@@ -108,12 +117,22 @@
 
             {% for sale in page_obj %}
             <tr>
+              <td>
+                {% if sale.cash %}
+                <a href="{% url 'app:sale_change_cash' sale.id %}">
+                <img src="{% static 'img/done.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                </a>
+                {% else %}
+                <a href="{% url 'app:sale_change_cash' sale.id %}">
+                <img src="{% static 'img/in_progress.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                </a>
+                {% endif %}
+                </td>
               <td>{{ sale.sale_number }}</td>
               <td>{{ sale.sale_date|date:"d-m-Y" }}</td>
               <td>{{ sale.product_list }}</td>
               <td>{{ sale.total_price|floatformat:-2 }}</td>
               <td>{{ sale.client_name }}</td>
-              <td>{{ sale.client_type }}</td>
               <td>{{ sale.payment_type }}</td>
               <td>{{ sale.receiving_type }}</td>
               <td>
