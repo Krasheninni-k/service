@@ -25,6 +25,7 @@ urlpatterns = [
          views.UserUpdateView.as_view(), name='edit_profile'),
     path('app/', include('app.urls', namespace='app')),
     path('pages/', include('pages.urls', namespace='pages')),
+    path('', views.index, name='index'),
 ]
 
 if settings.DEBUG:

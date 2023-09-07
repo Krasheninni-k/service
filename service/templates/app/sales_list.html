@@ -15,8 +15,8 @@
               <br>
           </div>
           <div class="col-md-3">
-              <br>{% if goods_list.sum_sale is not None %}Сумма продаж: {{ goods_list.sum_sale }} {% else %} {% endif %}
-              <br>{% if goods_list.sum_sale is not None %}Маржа: {{ goods_list.sum_margin }} {% else %} {% endif %}
+              <br>{% if goods_list.sum_sale is not None %}Сумма продаж: {{ goods_list.sum_sale|floatformat:-2 }} {% else %} {% endif %}
+              <br>{% if goods_list.sum_sale is not None %}Маржа: {{ goods_list.sum_margin|floatformat:-2 }} {% else %} {% endif %}
           </div>
           <div class="col-md-3">
               <br>{% if goods_list.sum_sale is not None %}Маржинальность:

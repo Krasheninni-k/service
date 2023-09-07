@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-d%#ixibc8%9k7d+*==&8n#1&*t_t8kgyy%+kd9t-t-tphnzy2n'
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'djirobots.pythonanywhere.com', 'www.djirobots.pythonanywhere.com',]
 
