@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}
   Часто задаваемые вопросы
 {% endblock %}
@@ -150,6 +151,26 @@
                        1. Клюевые показатели: выручка (руб.), маржа (руб.), наценка (%), маржинальность (%).
                        <br>2. Месячные нормативы: выручка = 2 млн, маржинальность = 30%, наценка = 42,85%.
                        <br>3. Единичные нормативы: <a href="{% url 'profile' user.username %}">норма наценки</a> на товар зависит от его себестоимости и колеблется от 25 до 120%.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="question11">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#answer11" aria-expanded="true" aria-controls="answer1">
+                        Вопрос 11: Что значат "галочки" и "часы" на странице продаж?
+                    </button>
+                </h2>
+                <div id="answer11" class="accordion-collapse collapse" aria-labelledby="question11" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        <img src="{% static 'img/in_progress.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                         означает, что деньги находятся в кассе, и еще не были зачислены на карту или расчетный счет.
+                       <br> <img src="{% static 'img/done.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">,
+                        что деньги уже поступили на счет напрямую или через кассу.
+                       <br>При внесении продажи в базу ситема ставит "галочку", если оплата произведена на счет ИП (ИП, Карта, QR-код),
+                       или на сервис Авито.
+                       <br> Если выбран тип оплаты "Наличные" или "Перевод", то система ставит "часы". 
+                       В этом случае менеджер по продажам вручную меняет "часы" на "галочку" в момент инкассации: зачисленения денег из кассы на счет.
                     </div>
                 </div>
             </div>
