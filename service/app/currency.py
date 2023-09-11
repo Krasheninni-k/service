@@ -25,9 +25,9 @@ def get_currency_rate():
 # Используется в views.py (catalog, catalog_detail)
 def change_prices():
     global CURRENCY_TIME
-    print(CURRENCY_TIME)
     timestamp = int(time.time())
     if timestamp > CURRENCY_TIME + 3600:
+        print('Rate Changed')
         CURRENCY_TIME = timestamp
         exchange_rate = get_currency_rate()
         update_exchange_rate(exchange_rate)

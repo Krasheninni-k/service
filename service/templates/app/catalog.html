@@ -6,11 +6,23 @@
 <div class="col d-flex justify-content-center">
   <div class="card" style="width: 60rem;">
     <div class="card-header d-flex justify-content-between">
-      <span>Каталог продукции: {{ count_product }} наименований
-      <br>
-      Курс юаня: {{ exchange_rate|floatformat:4 }}</span>
+      <span>Каталог продукции: {{ count_product }} наименований<br>Курс юаня: {{ exchange_rate|floatformat:4 }}</span>
       <a class="btn btn-primary" href="{% url 'app:catalog_add' %}" role="button">Добавить товар</a>
-    </div>
+  </div>
+
+  <div class="form-outline">
+    <form method="get" action="{% url 'app:catalog' %}">
+    <input type="search" id="form1" class="form-control" name='q' placeholder="Введите название товара" aria-label="Search" />
+    </form>
+    <script>
+      document.getElementById('form1').addEventListener('keyup', function(event) {
+          if (event.key === 'Enter') {
+              event.preventDefault();
+          }
+      });
+    </script>
+  </div>
+
     <div class="card-body">
       <table class="table">
         <thead>
@@ -25,7 +37,35 @@
             <th> Расчет (валюта)</th>
           </tr>
         </thead>
-        <tbody> 
+        <tbody>
+          {% if query %}
+            {% for result in results %}
+            <tr>
+              <td style="vertical-align: middle;"><a class="btn" 
+                href="{% url 'app:catalog_detail' result.id %}"
+                style="display: inline-block; text-align: left;">{{ result.title }}</a></td>
+              <td>{{ result.count_stock }}</td>
+              <td>{{ result.count_wait }}</td>
+              <td>{{ result.price_RUB|floatformat:0 }}</td>
+              <td>{% if result.market_price_RUB %}
+                {{ result.market_price_RUB|floatformat:0 }} {% endif %}</td>
+              <td>{% if result.order_price_RMB %}
+                  {{ result.order_price_RMB|floatformat:0 }} {% endif %}</td>
+              <td>{% if result.target_last_order_price_RUB %} 
+                <span class="{% if result.target_last_order_price_RUB > result.price_RUB %}text-danger{% endif %}">
+                {{ result.target_last_order_price_RUB|floatformat:0 }} </span> {% endif %}</td>
+              <td>{% if result.target_current_RMB_price_RUB %} 
+                <span class="{% if result.target_current_RMB_price_RUB > result.price_RUB %}text-danger{% endif %}">
+                {{ result.target_current_RMB_price_RUB|floatformat:0 }}</span>{% endif %}</td>
+              <td>
+                <a class="btn btn-sm text-muted" href="{% url 'app:catalog_detail' result.id %}" role="button">
+                  Детали
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+
+        {% else %} 
           {% for catalog in page_obj %}
             <tr>
               <td style="vertical-align: middle;"><a class="btn" 
@@ -38,8 +78,6 @@
                 {{ catalog.market_price_RUB|floatformat:0 }} {% endif %}</td>
               <td>{% if catalog.order_price_RMB %}
                   {{ catalog.order_price_RMB|floatformat:0 }} {% endif %}</td>
-
-
               <td>{% if catalog.target_last_order_price_RUB %} 
                 <span class="{% if catalog.target_last_order_price_RUB > catalog.price_RUB %}text-danger{% endif %}">
                 {{ catalog.target_last_order_price_RUB|floatformat:0 }} </span> {% endif %}</td>
@@ -54,10 +92,13 @@
               </td>
             </tr>
           {% endfor %}
+        {% endif %}
         </tbody>
       </table>
     </div>
   </div>
 </div>
-{% include "includes/paginator.html" %}
+{% if not query %}
+  {% include "includes/paginator.html" %}
+{% endif %} 
 {% endblock %}

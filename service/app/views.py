@@ -219,6 +219,20 @@ def catalog(request):
     count_product = Catalog.objects.select_related('created_by').filter(
         is_published=True).count
     context = {'page_obj': page_obj, 'count_product': count_product, 'exchange_rate': exchange_rate}
+
+    if request.method == 'GET':
+        query = request.GET.get('q', '')
+        print(query)
+        if query:
+            results = Catalog.objects.filter(title__icontains=query).annotate(
+        count_stock=Count('order_detail__goods',
+                      filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                             Q(order_detail__goods__sale_date__sale_date__isnull=True))),
+        count_wait=Count('order_detail__goods',
+                      filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('title')
+            context['results'] = results
+            context['query'] = query
+        return render(request, template, context)
     return render(request, template, context)
 
 
