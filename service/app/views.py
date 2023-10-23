@@ -132,7 +132,7 @@ def order_detail(request, pk):
           'order_date_id__order_date',
           'quantity',
           'id',
-          'product',
+          'product__id',
             'product__title',
               'cost_price_RUB',
               'ordering_price_RMB')
