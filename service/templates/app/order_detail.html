@@ -38,7 +38,8 @@
         <tbody> 
           {% for i in order_info %}
             <tr>
-              <td>{{ i.product__title }}</td>
+              <td style="vertical-align: middle;"><a class="btn" 
+                href="{% url 'app:catalog_detail' i.product %}" style="display: inline-block; text-align: left;">{{ i.product__title }}</a></td>
               <td>{{ i.quantity }}</td>
               <td>{{ i.ordering_price_RMB }}</td>
               <td>{{ i.cost_price_RUB }}</td>
