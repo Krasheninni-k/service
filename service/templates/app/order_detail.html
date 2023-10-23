@@ -17,10 +17,10 @@
       </span>
       <span>
         <a class="btn btn-sm text-muted" 
-        href="{% url 'app:order_edit' order_info.first.order_number_id__order_number %}" 
+        href="{% url 'app:order_edit' order_info.first.order_number_id__id %}" 
         role="button">Редактировать</a>
         <a class="btn btn-sm text-muted"
-        href="{% url 'app:order_delete' order_info.first.order_number_id__order_number %}"
+        href="{% url 'app:order_delete' order_info.first.order_number_id__id %}"
         role="button">Удалить закупку</a>
       </span>
     </div>
@@ -43,7 +43,7 @@
               <td>{{ i.quantity }}</td>
               <td>{{ i.ordering_price_RMB }}</td>
               <td>{{ i.cost_price_RUB }}</td>
-              <td><a class="btn btn-sm text-muted" href="{% url 'app:order_detail_edit' i.order_number_id__order_number i.id %}" role="button">
+              <td><a class="btn btn-sm text-muted" href="{% url 'app:order_detail_edit' i.order_number_id__id i.id %}" role="button">
                 Редактировать
               </a></td>
             </tr>

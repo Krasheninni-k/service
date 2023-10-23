@@ -31,13 +31,13 @@
               <td>{{ order.total_cost|floatformat:-2 }}</td>
               <td>{% if  order.received_date %} {{ order.received_date|date:"d-m-Y" }} 
                 {% else %} 
-                <a class="btn btn-sm text-danger" href="{% url 'app:order_received' order.order_number %}" role="button">
+                <a class="btn btn-sm text-danger" href="{% url 'app:order_received' order.id %}" role="button">
                   В пути
                 </a>
                 {% endif %}</td>
               <td>{{ order.cost_price_RUB }}</td>
               <td>
-                <a class="btn btn-sm text-muted" href="{% url 'app:order_detail' order.order_number %}" role="button">
+                <a class="btn btn-sm text-muted" href="{% url 'app:order_detail' order.id %}" role="button">
                   Детали
                 </a>
               </td>

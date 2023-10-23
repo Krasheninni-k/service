@@ -126,8 +126,9 @@ def order_detail(request, pk):
     template = 'app/order_detail.html'
     order_info = OrderDetail.objects.filter(
         is_published=True,
-        order_number_id__order_number=pk).select_related('product').values(
+        order_number_id=pk).select_related('product').values(
         'order_number_id__order_number',
+        'order_number_id__id',
         'received_date_id__received_date',
           'order_date_id__order_date',
           'quantity',
@@ -143,7 +144,7 @@ def order_detail(request, pk):
 @login_required
 def order_delete(request, pk):
     template = 'app/order_edit_delete.html'
-    instance = get_object_or_404(Orders, order_number=pk)
+    instance = get_object_or_404(Orders, id=pk)
     form = EditDeleteOrderForm(instance=instance)
     context = {'form': form}
     if request.method == 'POST':
@@ -155,7 +156,7 @@ def order_delete(request, pk):
 @login_required
 def order_edit(request, pk):
     template = 'app/order_edit_delete.html'
-    instance = get_object_or_404(Orders, order_number=pk)
+    instance = get_object_or_404(Orders, id=pk)
     if request.method == 'POST':
         form = EditDeleteOrderForm(request.POST, instance=instance)
         if form.is_valid():
@@ -173,7 +174,7 @@ def order_edit(request, pk):
 def order_detail_edit(request, **kwargs):
     template = 'app/order_detail_edit.html'
     instance = get_object_or_404(OrderDetail, pk=kwargs['pk'])
-    order_number = instance.order_number.order_number
+    id = instance.order_number.id
     form = EditOrderDetailForm(instance=instance)
     context = {'form': form}
     if request.method == 'POST':
@@ -182,14 +183,14 @@ def order_detail_edit(request, **kwargs):
             form.save()
             change_order_detail_fields(instance)
             update_catalog(instance)
-            return redirect('app:order_detail', pk=order_number)
+            return redirect('app:order_detail', pk=id)
     return render(request, template, context)
 
 
 @login_required
 def order_received(request, pk):
     template = 'app/order_received.html'
-    order = get_object_or_404(Orders, order_number=pk)
+    order = get_object_or_404(Orders, id=pk)
     form = ReceivedForm(request.POST or None)
     context = {'form': form}
     if request.method == 'POST':
