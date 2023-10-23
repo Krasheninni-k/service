@@ -104,8 +104,6 @@ class Orders(BaseModel):
         verbose_name = 'Закупка'
         verbose_name_plural = 'Закупки'
         ordering = ['-order_number']
-        constraints = (models.UniqueConstraint(
-            fields=('order_number',), name='Unique order_number',),)
 
     def __str__(self):
         date = self.order_date.strftime('%Y-%m-%d')
