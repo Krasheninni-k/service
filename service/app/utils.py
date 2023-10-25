@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Max, Sum, F, Count
 
-from app.models import Goods, Orders, OrderDetail, Catalog, Sales, SaleDetail, CustomSettings
+from app.models import Goods, Orders, OrderDetail, Catalog, Sales, SaleDetail, CustomSettings, Receiving_type
 
 User = get_user_model()
 
@@ -200,3 +200,9 @@ def get_month_goods_list(start_date, end_date):
         sum_margin=Sum('margin')
         )
     return(month_goods_list)
+
+def get_count_postamat(month_list):
+    count_postamat = month_list.filter(
+       receiving_type=Receiving_type.objects.get(title='Постамат')
+       ).values('id').count()
+    return count_postamat

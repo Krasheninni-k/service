@@ -24,7 +24,8 @@ from app.forms import (OrderForm, OrderDetailForm, SaleForm, SaleDetailForm,
 from app.utils import (create_goods, update_goods, update_catalog, update_exchange_rate,
                        change_order_detail_fields, change_sale_detail_fields,
                        change_order_days_in_stock, change_sale_days_in_stock,
-                       product_list_for_import, get_month_list, get_month_goods_list)
+                       product_list_for_import, get_month_list, get_month_goods_list,
+                       get_count_postamat)
 
 from app.currency import change_prices
 
@@ -488,16 +489,20 @@ def sales_list(request):
     start_date = datetime(year, month, 1).date()
     end_date = datetime(year, month, last_day).date()
 
-    count_sales = Sales.objects.filter(
-       sale_date__gte=start_date,
-       sale_date__lte=end_date
-       ).values('id').count()
+    sum_cash = sales_list.filter(cash=False).aggregate(sum_cash=Sum('total_price'))
+
+    month_list = sales_list.filter(
+       sale_date__gte=start_date, sale_date__lte=end_date)
+    count_sales = month_list.values('id').count()
+    count_postamat = get_count_postamat(month_list)
     goods_list = get_month_goods_list(start_date, end_date)
     start_end_date_form = StartEndDateForm(request.POST or None)
     context = {'page_obj': page_obj,
                'goods_list': goods_list,
+               'sum_cash': sum_cash,
                'current_date': current_date,
                'count_sales': count_sales,
+               'count_postamat': count_postamat,
                'start_end_date_form': start_end_date_form
                }
     if request.method == 'POST':
@@ -505,9 +510,11 @@ def sales_list(request):
             start_date = start_end_date_form.cleaned_data['start_date']
             end_date = start_end_date_form.cleaned_data['end_date']
             month_list = get_month_list(start_date, end_date)
+            count_postamat = get_count_postamat(month_list)
             goods_list = get_month_goods_list(start_date, end_date)
             context['month_list'] = month_list
             context['goods_list'] = goods_list
+            context['count_postamat'] = count_postamat
     if goods_list['count_goods'] > 0:
         total_margin = goods_list['sum_margin'] / goods_list['sum_sale']*100
         total_markup = (goods_list['sum_sale'] / (goods_list['sum_sale'] - goods_list['sum_margin']) - 1) *100

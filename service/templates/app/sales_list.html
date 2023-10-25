@@ -13,11 +13,13 @@
             <span><b>{% if month_list %} {{ month_list.0.sale_date|date:"F" }} {% else %} {{ current_date|date:"F" }} {% endif %}</b>
               <br>Количество продаж: {% if month_list %} {{ month_list.count }} {% else %} {{ count_sales }} {% endif %}
               <br>Продано товаров: {{ goods_list.count_goods }}
+              <br>Постамат: {{ count_postamat }}
               <br>
           </div>
           <div class="col-md-3">
               <br>{% if goods_list.sum_sale is not None %}Сумма продаж: {{ goods_list.sum_sale|floatformat:-2 }} {% else %} {% endif %}
               <br>{% if goods_list.sum_sale is not None %}Маржа: {{ goods_list.sum_margin|floatformat:-2 }} {% else %} {% endif %}
+              <br>Касса: {% if sum_cash.sum_cash is not None%} {{ sum_cash.sum_cash }} {% else %} 0 {% endif %}
           </div>
           <div class="col-md-3">
               <br>{% if goods_list.sum_sale is not None %}Маржинальность:
