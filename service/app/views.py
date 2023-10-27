@@ -682,8 +682,8 @@ def import_orders_data(request):
             order_date = row['order_date'].to_pydatetime()
             quantity_name = int(row['quantity'])
             received_date = row['received_date']
-            if received_date:
-                 received_date = received_date.to_pydatetime()
+            if not pd.isna(row['received_date']):
+                received_date = row['received_date'].to_pydatetime()
             created_by = request.user
             order = Orders(
                 order_number=order_number,
