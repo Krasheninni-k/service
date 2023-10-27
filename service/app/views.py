@@ -681,7 +681,9 @@ def import_orders_data(request):
             order_number = int(row['order_number'])
             order_date = row['order_date'].to_pydatetime()
             quantity_name = int(row['quantity'])
-            received_date = row['received_date'].to_pydatetime()
+            received_date = row['received_date']
+            if received_date:
+                 received_date = received_date.to_pydatetime()
             created_by = request.user
             order = Orders(
                 order_number=order_number,
@@ -697,8 +699,8 @@ def import_orders_data(request):
                 created_by=User.objects.get(username=request.user.username)
                 quantity=int(row[0])
                 product = Catalog.objects.get(title=row[1])
-                cost_price_RUB=int(row[2])
-                ordering_price_RMB=int(row[3])
+                cost_price_RUB=float(row[2])
+                ordering_price_RMB=float(row[3])
                 order_detail = OrderDetail(
                     order_number=order,
                     order_date=order,
