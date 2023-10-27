@@ -684,6 +684,8 @@ def import_orders_data(request):
             received_date = row['received_date']
             if not pd.isna(row['received_date']):
                 received_date = row['received_date'].to_pydatetime()
+            else:
+                received_date = None
             created_by = request.user
             order = Orders(
                 order_number=order_number,
