@@ -19,19 +19,19 @@ class Catalog(BaseModel):
     title = models.CharField('Название', max_length=256)
     description = models.TextField('Описание', blank=True)
     price_RUB = models.DecimalField(
-        'Цена по прайсу, руб.', max_digits=9, decimal_places=2,
+        'Цена по прайсу, руб.', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     target_last_order_price_RUB = models.DecimalField(
-        'Расчетная цена от последней закупки, руб.', max_digits=9, decimal_places=2,
+        'Расчетная цена от последней закупки, руб.', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     target_current_RMB_price_RUB = models.DecimalField(
-        'Расчетная цена от курса, руб.', max_digits=9, decimal_places=2,
+        'Расчетная цена от курса, руб.', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     market_price_RUB = models.DecimalField(
-        'Рыночная цена, руб.', max_digits=9, decimal_places=2,
+        'Рыночная цена, руб.', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     order_price_RMB = models.DecimalField(
-        'Цена закупки в юанях.', max_digits=9, decimal_places=2,
+        'Цена закупки в юанях.', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     image = models.ImageField('Фото', upload_to='app_images', blank=True)
     length = models.DecimalField(
@@ -94,7 +94,7 @@ class Orders(BaseModel):
     quantity = models.IntegerField('Количество единиц товаров',  default=1)
     product_list = models.TextField('Cостав закупки', blank=True)
     total_cost = models.DecimalField(
-        'Себестоимость закупки', max_digits=8, decimal_places=2,
+        'Себестоимость закупки', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     received_date = models.DateTimeField('Дата получения закупки',
                                          null=True, blank=True)
@@ -136,10 +136,10 @@ class OrderDetail(BaseModel):
         verbose_name='Товар')
     quantity = models.IntegerField('Количество единиц товаров',  default=1)
     ordering_price_RMB = models.DecimalField(
-        'Цена закупки в юанях', max_digits=8, decimal_places=2,
+        'Цена закупки в юанях', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     cost_price_RUB = models.DecimalField(
-        'Себестоимость в руб.', max_digits=9, decimal_places=2,
+        'Себестоимость в руб.', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
 
 
@@ -207,7 +207,7 @@ class SaleDetail(BaseModel):
         verbose_name='Товар')
     quantity = models.IntegerField('Количество единиц товаров',  default=1)
     sale_price_RUB = models.DecimalField(
-        'Цена продажи', max_digits=9, decimal_places=2,
+        'Цена продажи', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     
     class Meta:
@@ -285,10 +285,10 @@ class Goods(BaseModel):
         verbose_name='Тип получения',
         null=True, blank=True)
     margin = models.DecimalField(
-        'Маржа, руб.', max_digits=9, decimal_places=2,
+        'Маржа, руб.', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     markup = models.DecimalField(
-        'Наценка, %', max_digits=9, decimal_places=2,
+        'Наценка, %', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     days_in_stock = models.IntegerField('Дней на складе', null=True, blank=True, default=0)
 
