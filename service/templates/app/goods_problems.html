@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% block title %}
+  Список проблемных товаров
+{% endblock %}
+{% block content %}
+<div class="col d-flex justify-content-center">
+  <div class="card" style="width: 60rem;">
+    <div class="card-header d-flex justify-content-between">
+      <div class="col-md-8">
+          Список проблемных товаров:
+          {% if not defect %}
+          <div class="row">
+              <div class="col-md-3">
+                <a class="btn btn-sm mb-2" style="background-color: #800000;; color: white;"
+                href="{% url 'app:problem_goods' %}?in_stock=365" role="button">> 365 дн.</a>
+                <br>{{ result.over_365.count }} шт.
+                <br>{{ result.over_365.total_cost }} руб.
+                <br>{{ result.over_365.percent }} %
+              </div>
+              <div class="col-md-3">
+                <a class="btn btn-primary btn-sm mb-2" style="background-color: red; color: white;"
+                href="{% url 'app:problem_goods' %}?in_stock=180" role="button">180 - 365 дн.</a>
+                <br>{{ result.between_180_and_365.count }} шт.
+                <br>{{ result.between_180_and_365.total_cost }} руб.
+                <br>{{ result.between_180_and_365.percent }} %  
+        
+              </div>
+              <div class="col-md-3">
+                <a class="btn btn-primary btn-sm mb-2" style="background-color: orange; color: white;"
+                href="{% url 'app:problem_goods' %}?in_stock=60" role="button">60 - 180 дн.</a>
+                <br>{{ result.between_60_and_180.count }} шт.
+                <br>{{ result.between_60_and_180.total_cost }} руб.
+                <br>{{ result.between_60_and_180.percent }} %
+                  
+              </div>
+              <div class="col-md-3">
+                <a class="btn btn-sm mb-2" style="background-color: darkgreen; color: white;" 
+                href="{% url 'app:problem_goods' %}?in_stock=0" role="button">< 60 дн.</a>
+                <br>{{ result.under_60.count }} шт.
+                <br>{{ result.under_60.total_cost }} руб.
+                <br>{{ result.under_60.percent }} %
+            </div>
+          </div>
+          {% endif %}
+      </div>
+      
+      <div class="col-md-4 d-flex align-items-end justify-content-end">
+          <a class="btn btn-primary btn-sm me-2" href="{% url 'app:defect_goods' %}" role="button">Брак</a>
+          <a class="btn btn-primary btn-sm" href="{% url 'app:problem_goods' %}" role="button">Проблемные</a>
+      </div>
+  </div>
+  {% if detail %}
+  <div class="card-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th >Продукт</th>
+          <th >Кол-во</th>
+          <th >На складе</th>
+          <th>Себест</th>
+        </tr>
+      </thead>
+      <tbody> 
+      {% for product in detail %}
+        <tr>
+          <td style="vertical-align: middle;"><a class="btn" 
+            href="{% url 'app:selected_good' product.product__product__id %}"
+            style="display: inline-block; text-align: left;">{{ product.product__product__title }}</a></td>
+          <td>{{ product.product_count }}</td>
+          <td>{{ product.max_days_in_stock }}</td>
+          <td>{{ product.total_cost|floatformat:2 }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+  {% else %}
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 400px;">Продукт</th>
+            <th style="width: 150px;">Оплачен</th>
+            <th style="width: 150px;">Получен</th>
+            <th>S/n</th>
+            <th>Себест.</th>
+            <th>Каталог</th>
+            <th>На складе</th>
+          </tr>
+        </thead>
+        <tbody> 
+        {% for good in goods_list %}
+          <tr>
+            <td style="vertical-align: middle;"><a class="btn" 
+              href="{% url 'app:catalog_detail' good.product__product %}" style="display: inline-block; text-align: left;">{{ good.product__product__title }}</a></td>
+            <td>{{ good.order_number__order_date|date:"d-m-Y" }}</td>
+            <td>{{ good.received_date|date:"d-m-Y" }}</td>
+            <td>{{ good.sn_number }}</td>
+            <td>{{ good.cost_price_RUB__cost_price_RUB }}</td>
+            <td>{{ good.product__product__price_RUB }}</td>
+            <td>{{ good.days_in_stock }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

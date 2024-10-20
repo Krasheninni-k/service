@@ -8,21 +8,26 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from datetime import datetime
-from django.db.models import F, Sum, Q, Count
+from django.db.models import F, Sum, Q, Count, Avg, fields, Max
 import pandas as pd
 import calendar
+from django.db.models.functions import Now, Cast, Round
 
-from app.models import (Orders, Goods, Catalog, OrderDetail, Sales, SaleDetail,
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+
+from app.models import (Orders, Goods, Catalog, OrderDetail, Sales, SaleDetail, ScanSnNumber,
                          Payment_type, Client_type, Receiving_type, CustomSettings)
 
-from app.forms import (OrderForm, OrderDetailForm, SaleForm, SaleDetailForm,
-                        ReceivedForm, EditDeleteOrderForm, EditOrderDetailForm,
-                        CatalogForm, SaleEditDeleteForm, SaleEditDetailForm,
-                        CustomSettingsForm, FilterProductForm,
-                        StartEndDateForm, MonthForm)
+from app.forms import (OrderForm, OrderDetailForm, SaleForm,
+                        EditDeleteOrderForm, EditOrderDetailForm,
+                        CatalogForm, SaleEditDeleteForm, EditGoodDetailForm,
+                        CustomSettingsForm,
+                        StartEndDateForm, MonthForm, SalePriceForm)
 
 from app.utils import (create_goods, update_goods, update_catalog, update_exchange_rate,
-                       change_order_detail_fields, change_sale_detail_fields,
+                       change_order_detail_fields,
                        change_order_days_in_stock, change_sale_days_in_stock,
                        product_list_for_import, get_month_list, get_month_goods_list,
                        get_count_postamat)
@@ -191,17 +196,72 @@ def order_detail_edit(request, **kwargs):
 @login_required
 def order_received(request, pk):
     template = 'app/order_received.html'
-    order = get_object_or_404(Orders, id=pk)
-    form = ReceivedForm(request.POST or None)
-    context = {'form': form}
-    if request.method == 'POST':
-        form = ReceivedForm(request.POST, instance=order)
-        if form.is_valid():
-            form.save()
-            redirect_url = reverse('app:orders_list')
-            return HttpResponseRedirect(redirect_url)
+    goods_info = Goods.objects.select_related(
+        'order_number', 'product__product','cost_price_RUB').filter(
+        is_published=True, order_number__id=pk).values(
+        'order_number__order_number', 'order_number__order_date',
+        'product__product__title','cost_price_RUB__cost_price_RUB',
+        'received_date', 'id','received', 'sn_number')
+    context = {'goods_info': goods_info, 'pk': pk, 'begin': True}
     return render(request, template, context)
 
+# Кнопка для изменения статуса конкретного товара received в блоке Приемки товара
+@login_required
+def order_change_received(request, pk):
+    good = get_object_or_404(Goods, pk=pk)
+    good.received = not good.received
+    good.save()
+    url = reverse('app:order_received', args=[good.order_number.id])
+    return redirect(f"{url}#good-{good.id}")
+
+# Кнопка для приемки всех товаров заказа "Принять все"
+@login_required
+def order_accept_all(request, pk):
+    order = get_object_or_404(Orders, pk=pk)
+    has_unreceived_goods = Goods.objects.filter(order_number=order, received=False).exists()
+    new_status = True if has_unreceived_goods else False
+    Goods.objects.filter(order_number=order).update(received=new_status)
+    return redirect('app:order_received', pk=order.id)
+
+# Кнопка начать сканирование для внесения заказа
+@login_required
+def order_begin_scan(request, pk):
+    template = 'app/order_received.html'
+    ScanSnNumber.objects.all().delete()
+    unreceived_goods = Goods.objects.select_related(
+        'order_number', 'product__product','cost_price_RUB').filter(
+            order_number__id=pk, received=True, received_date__isnull=True).values(
+        'order_number__order_number', 'order_number__order_date',
+        'product__product__title','cost_price_RUB__cost_price_RUB',
+        'received_date', 'id','received', 'sn_number')
+    context = {'goods_info':  unreceived_goods, 'pk': pk, 'approve': True}
+    return render(request, template, context)
+
+@login_required
+def order_end_scan(request, pk):
+    current_date = datetime.now()
+    template = 'app/order_received.html'
+    sn_numbers = ScanSnNumber.objects.all()
+    unreceived_goods = Goods.objects.filter(
+            order_number__id=pk, received=True, received_date__isnull=True)
+    for scan, good in zip(sn_numbers, unreceived_goods):
+        good.sn_number = scan.sn_number
+        good.received_date = current_date
+        good.save()
+    ScanSnNumber.objects.all().delete()
+    has_unreceived_goods = Goods.objects.filter(order_number__id=pk, received_date__isnull=True).exists()
+    if not has_unreceived_goods:
+        order = get_object_or_404(Orders, pk=pk)
+        order.received_date = current_date
+        order.save()
+    goods_info = Goods.objects.select_related(
+        'order_number', 'product__product', 'cost_price_RUB').filter(
+        is_published=True, order_number__id=pk).values(
+        'order_number__order_number', 'order_number__order_date',
+        'product__product__title','cost_price_RUB__cost_price_RUB',
+        'received_date', 'id','received', 'sn_number')
+    context = {'goods_info': goods_info, 'pk': pk, 'finished': True}
+    return render(request, template, context)
 
 # Каталог
 @login_required
@@ -212,10 +272,10 @@ def catalog(request):
     catalog = Catalog.objects.select_related('created_by').filter(
         is_published=True).annotate(
         count_stock=Count('order_detail__goods',
-                      filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                      filter=(Q(order_detail__goods__received_date__isnull=False) &
                              Q(order_detail__goods__sale_date__sale_date__isnull=True))),
         count_wait=Count('order_detail__goods',
-                      filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('title')[:100]
+                      filter=Q(order_detail__goods__received_date__isnull=True))).order_by('title')[:100]
     paginator = Paginator(catalog, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -229,10 +289,10 @@ def catalog(request):
         if query:
             results = Catalog.objects.filter(title__icontains=query).annotate(
         count_stock=Count('order_detail__goods',
-                      filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                      filter=(Q(order_detail__goods__received_date__isnull=False) &
                              Q(order_detail__goods__sale_date__sale_date__isnull=True))),
         count_wait=Count('order_detail__goods',
-                      filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('title')
+                      filter=Q(order_detail__goods__received_date__isnull=True))).order_by('title')
             context['results'] = results
             context['query'] = query
         return render(request, template, context)
@@ -260,11 +320,11 @@ def catalog_detail(request, pk):
     template = 'app/catalog_detail.html'
     product = get_object_or_404(Catalog, pk=pk)
     product_count_stock = Goods.objects.filter(
-        Q(received_date__received_date__isnull=False),
+        Q(received_date__isnull=False),
           Q(sale_date__sale_date__isnull=True),
             product__product=pk).values('id').count()
     product_count_wait = Goods.objects.filter(
-        Q(received_date__received_date__isnull=True), product__product=pk).values('id').count()
+        Q(received_date__isnull=True), product__product=pk).values('id').count()
     order_list = OrderDetail.objects.filter(
         product=pk).values('order_number__order_number',
                            'order_date__order_date',
@@ -275,8 +335,8 @@ def catalog_detail(request, pk):
         'margin',
         'markup',
         'days_in_stock',
-        'received_date__received_date',
-        'sale_price_RUB__sale_price_RUB',
+        'received_date',
+        'sale_price',
         'cost_price_RUB__cost_price_RUB',
         'sale_date__sale_date').order_by('sale_date')
     paginator = Paginator(sale_list, 10)
@@ -320,37 +380,37 @@ def stock_list(request):
     stock_list = Catalog.objects.filter(
     order_detail__goods__isnull=False).annotate(
     count_stock=Count('order_detail__goods',
-                      filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                      filter=(Q(order_detail__goods__received_date__isnull=False) &
                             Q(order_detail__goods__sale_date__sale_date__isnull=True))),
     count_wait=Count('order_detail__goods',
-                      filter=Q(order_detail__goods__received_date__received_date__isnull=True)),
+                      filter=Q(order_detail__goods__received_date__isnull=True)),
     cost_stock=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
-                 filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                 filter=(Q(order_detail__goods__received_date__isnull=False) &
                             Q(order_detail__goods__sale_date__sale_date__isnull=True))),
     cost_wait=Sum('order_detail__goods__cost_price_RUB__cost_price_RUB',
-                 filter=Q(order_detail__goods__received_date__received_date__isnull=True)),
+                 filter=Q(order_detail__goods__received_date__isnull=True)),
     price_stock=Sum('price_RUB',
-                 filter=(Q(order_detail__goods__received_date__received_date__isnull=False) &
+                 filter=(Q(order_detail__goods__received_date__isnull=False) &
                             Q(order_detail__goods__sale_date__sale_date__isnull=True))),
     price_wait=Sum('price_RUB',
-                 filter=Q(order_detail__goods__received_date__received_date__isnull=True))).order_by('title')
+                 filter=Q(order_detail__goods__received_date__isnull=True))).order_by('title')
     total_count_stock = Goods.objects.filter(
-        Q(received_date__received_date__isnull=False) &
+        Q(received_date__isnull=False) &
         Q(sale_date__sale_date__isnull=True)).values('id').count()
     total_count_wait = Goods.objects.filter(
-        Q(received_date__received_date__isnull=True)).values('id').count()
+        Q(received_date__isnull=True)).values('id').count()
     total_list = Goods.objects.filter(
         is_published=True).annotate(
         cost_stock=Sum('cost_price_RUB__cost_price_RUB', filter=(
-            Q(received_date__received_date__isnull=False) &
+            Q(received_date__isnull=False) &
             Q(sale_date__sale_date__isnull=True))),
         cost_wait=Sum('cost_price_RUB__cost_price_RUB', filter=(
-            Q(received_date__received_date__isnull=True))),
+            Q(received_date__isnull=True))),
         price_stock=Sum('price_RUB__price_RUB', filter=(
-            Q(received_date__received_date__isnull=False) &
+            Q(received_date__isnull=False) &
             Q(sale_date__sale_date__isnull=True))),
         price_wait=Sum('price_RUB__price_RUB', filter=(
-            Q(received_date__received_date__isnull=True)))
+            Q(received_date__isnull=True)))
         )
     total_cost_stock = sum(item.cost_stock if item.cost_stock is not None else 0 for item in total_list)
     total_cost_wait = sum(item.cost_wait if item.cost_wait is not None else 0 for item in total_list)
@@ -369,79 +429,14 @@ def stock_list(request):
 #  Продажи
 @login_required
 def sale_detail_add(request):
-    sale_number = request.GET.get('sale_number')
-    sale_date = request.GET.get('sale_date')
-    client_name = request.GET.get('client_name')
-    client_contact = request.GET.get('client_contact')
-    comment = request.GET.get('comment')
-    regular_client = request.GET.get('regular_client')
-    quantity_name = int(request.GET.get('quantity'))
-    payment_type = Payment_type.objects.get(
-        id=int(request.GET.get('payment_type')))
-    client_type = Client_type.objects.get(
-        id=int(request.GET.get('client_type')))
-    receiving_type = Receiving_type.objects.get(
-        id=int(request.GET.get('receiving_type')))
     template = 'app/sale_detail_add.html'
-    forms = []
-    product_list = []
-
-    if request.method == 'POST':
-        for i in range(quantity_name):
-            form = SaleDetailForm(request.POST, prefix=f'form_{i+1}')
-            forms.append(form)
-        if all(form.is_valid() for form in forms):
-            sale = Sales.objects.create(
-                sale_number=sale_number,
-                created_by=request.user,
-                sale_date=datetime.strptime(sale_date, "%Y-%m-%d"),
-                quantity=quantity_name,
-                payment_type=payment_type,
-                client_type=client_type,
-                receiving_type=receiving_type,
-                client_name=client_name,
-                client_contact=client_contact,
-                regular_client=regular_client
-            )
-            if comment != "None":
-                sale.comment = comment
-                sale.save()
-            if (sale.payment_type == Payment_type.objects.get(title='Наличные') or
-                sale.payment_type == Payment_type.objects.get(title='Перевод')):
-                sale.cash = False
-            for i in range(quantity_name):
-                quantity = int(request.POST.get(
-                    'form_' + str(i+1) + '-quantity'))
-                product = Catalog.objects.get(
-                    id=int(request.POST.get('form_' + str(i+1) + '-product')))
-                sale_detail = SaleDetail.objects.create(
-                    sale_number=Sales.objects.get(id=sale.id),
-                    sale_date=Sales.objects.get(id=sale.id),
-                    created_by=request.user,
-                    product=product,
-                    quantity=quantity,
-                    sale_price_RUB=request.POST.get(
-                        'form_' + str(i+1) + '-sale_price_RUB')
-                )
-                sale_detail.save()
-                product_list.append(f'{product} - {quantity} ед.')
-                sale.product_list = ', '.join(
-                    str(item) for item in product_list)
-                sale.save()
-                update_goods(sale_detail, quantity)
-            total_price = SaleDetail.objects.filter(
-                sale_number=sale.id).aggregate(
-                total_price=Sum(
-                    F('quantity') * F('sale_price_RUB')))['total_price']
-            sale.total_price = total_price
-            sale.save()
-            return redirect('app:sales_list')
-    else:
-        for i in range(quantity_name):
-            form = SaleDetailForm(prefix=f'form_{i+1}')
-            forms.append(form)
-
-    context = {'forms': forms}
+    goods_list = Goods.objects.filter(
+        is_published=True, sold=True, sale_date__sale_date__isnull=True)
+    # Сбросим лишние True, по которым нет даты продажи (кроме перехода с корзины)
+    add_more = request.GET.get('add_more', 'False')
+    if add_more != 'True':
+        goods_list.update(sold=False)
+    context = {'begin': True}
     return render(request, template, context)
 
 
@@ -452,8 +447,7 @@ def sale_add(request):
     context = {'form': form}
     if form.is_valid():
         sale_number = form.cleaned_data['sale_number']
-        sale_date = form.cleaned_data['sale_date'].date()
-        quantity = form.cleaned_data['quantity']
+        sale_date = form.cleaned_data['sale_date'].strftime('%Y-%m-%d')
         payment_type = form.cleaned_data['payment_type'].id
         client_type = form.cleaned_data['client_type'].id
         receiving_type = form.cleaned_data['receiving_type'].id
@@ -461,14 +455,18 @@ def sale_add(request):
         client_contact = form.cleaned_data['client_contact']
         comment = form.cleaned_data['comment']
         regular_client = form.cleaned_data['regular_client']
-        redirect_url = (
-            reverse('app:sale_detail_add') +
-            f'?sale_number={sale_number}&sale_date={sale_date}'
-            f'&quantity={quantity}&payment_type={payment_type}'
-            f'&client_type={client_type}&receiving_type={receiving_type}'
-            f'&client_name={client_name}&client_contact={client_contact}'
-            f'&comment={comment}&regular_client={regular_client}')
-        return HttpResponseRedirect(redirect_url)
+        sale_info = {
+            'sale_number': sale_number,
+            'sale_date': sale_date,
+            'payment_type': payment_type,
+            'client_type': client_type,
+            'receiving_type': receiving_type,
+            'client_name': client_name,
+            'client_contact': client_contact,
+            'comment': comment,
+            'regular_client': regular_client}
+        request.session['sale_info'] = sale_info
+        return HttpResponseRedirect(reverse('app:sale_detail_add'))
     return render(request, template, context)
 
 
@@ -543,11 +541,13 @@ def sale_detail(request, pk):
 @login_required
 def sale_delete(request, pk):
     template = 'app/sale_edit_delete.html'
-    instance = get_object_or_404(Sales, sale_number=pk)
-    form = SaleEditDeleteForm(instance=instance)
+    sale = get_object_or_404(Sales, sale_number=pk)
+    form = SaleEditDeleteForm(instance=sale)
     context = {'form': form}
     if request.method == 'POST':
-        instance.delete()
+        good_list = Goods.objects.filter(sale_date=sale)
+        good_list.update(sold=False, sale_price=None)
+        sale.delete()
         return redirect('app:sales_list')
     return render(request, template, context)
 
@@ -568,22 +568,63 @@ def sale_edit(request, pk):
     context = {'form': form}
     return render(request, template, context)
 
-
 @login_required
-def sale_detail_edit(request, **kwargs):
-    template = 'app/sale_edit_detail.html'
-    instance = get_object_or_404(SaleDetail, pk=kwargs['pk'])
-    sale_number = instance.sale_number.sale_number
-    form = SaleEditDetailForm(instance=instance)
-    context = {'form': form}
-    if request.method == 'POST':
-        form = SaleEditDetailForm(request.POST, instance=instance)
-        if form.is_valid():
-            form.save()
-            change_sale_detail_fields(instance)
-            return redirect('app:sale_detail', pk=sale_number)
-    return render(request, template, context)
+def sale_detail_edit(request, pk):
+    template = 'app/sale_busket.html'
 
+    goods_list = Goods.objects.select_related(
+        'order_number',
+        'product', 'sale_date').filter(is_published=True, sale_date__sale_number=pk)
+    print(goods_list)
+    context = {'goods_list': goods_list}
+
+    forms = []
+    product_list = []
+
+    if request.method == 'POST':
+        for i, good in enumerate(goods_list):
+            form = SalePriceForm(request.POST, prefix=f'form_{i+1}', instance=good)
+            forms.append(form)
+        if all(form.is_valid() for form in forms):
+            for form in forms:
+                form.save()
+            # Получаем объект sale и редактируем его поля
+            sale = get_object_or_404(Sales, sale_number=pk)
+
+            product_summary = goods_list.values('product__product__id').annotate(
+                quantity=Count('id'),
+                average_price=Avg('sale_price'))
+
+            for product in product_summary:
+                sale_price_RUB = product['average_price']
+                quantity = product['quantity']
+                product = Catalog.objects.get(id=int(product['product__product__id']))
+                # Получаем объект sale_detail и редактируем все его поля 
+                sale_detail = get_object_or_404(SaleDetail, product=product, sale_number=sale)
+                print(sale_detail.sale_date)
+                sale_detail.product = product
+                sale_detail.quantity = quantity
+                sale_detail.sale_price_RUB = sale_price_RUB
+                sale_detail.save()
+                product_list.append(f'{product} - {quantity} ед.')
+                sale.product_list = ', '.join(
+                    str(item) for item in product_list)
+                sale.save()
+                update_goods(goods_list, sale)
+            total_price = SaleDetail.objects.filter(
+                sale_number=sale.id).aggregate(
+                total_price=Sum(
+                    F('quantity') * F('sale_price_RUB')))['total_price']
+            sale.total_price = total_price
+            sale.save()
+            return redirect('app:sales_list')
+    else:
+        for i, good in enumerate(goods_list):
+            form = SalePriceForm(instance=good, prefix=f'form_{i+1}')
+            forms.append((good, form))
+
+    context = {'forms': forms}
+    return render(request, template, context)
 
 @login_required
 def sale_change_cash(request, pk):
@@ -593,31 +634,324 @@ def sale_change_cash(request, pk):
     return redirect('app:sales_list')
 
 
+# Кнопка начать сканирование для внесения продажи
+@login_required
+def sale_begin_scan(request):
+    template = 'app/sale_detail_add.html'
+    ScanSnNumber.objects.all().delete()
+    context = {'approve': True}
+    return render(request, template, context)
+
+
+# Кнопка завершения сканирование для внесения продажи
+@login_required
+def sale_end_scan(request):
+    template = 'app/sale_detail_add.html'
+    sn_numbers = ScanSnNumber.objects.all()
+    sn_number_values = list(sn_numbers.values_list('sn_number', flat=True))
+    sale_info = Goods.objects.select_related(
+        'order_number', 'product__product', 'cost_price_RUB').filter(sn_number__in=sn_number_values)
+    sale_info.update(sold=True)
+    sale_info = sale_info.values(
+        'order_number__order_number', 'order_number__order_date',
+        'product__product__title', 'cost_price_RUB__cost_price_RUB',
+        'received_date', 'id', 'received', 'sn_number', 'sold', 'sale_date__sale_date')
+    ScanSnNumber.objects.all().delete()
+    context = {'sale_info': sale_info, 'finished': True}
+    return render(request, template, context)
+
+# Ручной выбор товара по поисковой строке
+@login_required
+def select_good(request):
+    template = 'app/sale_detail_add.html'
+    if request.method == 'GET':
+        query = request.GET.get('q', '')
+        if query:
+            results = Catalog.objects.filter(title__icontains=query)
+            context = {'results': results, 'query': query}
+        return render(request, template, context)
+    return render(request, template, context)
+
+# Переход к списку товаров в наличии при ручном выборе товара
+@login_required
+def selected_good_stock(request, pk):
+    template = 'app/sale_detail_add.html'
+    goods_list = Goods.objects.select_related(
+        'order_number',
+        'product', 'sale_date').filter(
+        is_published=True, received_date__isnull=False, product__product__id=pk, sale_date__sale_date__isnull=True).values(
+        'order_number__order_number', 'order_number__order_date',
+        'received_date', 'cost_price_RUB__cost_price_RUB',
+        'product__product__title', 'sn_number', 'sale_date__sale_date',
+        'sale_price_RUB__sale_price_RUB', 'id', 'sold')
+    context = {'goods_list': goods_list, 'selected': True}
+    return render(request, template, context)
+
+# Кнопка для изменения статуса конкретного товара sold в блоке Продажи товара
+@login_required
+def sale_change_sold(request, pk):
+    good = get_object_or_404(Goods, pk=pk)
+    good.sold = not good.sold
+    good.save()
+    url = reverse('app:selected_good_stock', args=[good.product.product.id])
+    return redirect(url)
+
+
+# Переход к списку товаров в наличии при ручном выборе товара
+@login_required
+def sale_busket(request):
+    template = 'app/sale_busket.html'
+    goods_list = Goods.objects.select_related(
+        'order_number',
+        'product', 'sale_date'
+    ).filter(is_published=True, sold=True, sale_date__sale_date__isnull=True)
+    quantity_name = goods_list.values('product').distinct().count()
+
+    forms = []
+    product_list = []
+
+    if request.method == 'POST':
+        for i, good in enumerate(goods_list):
+            form = SalePriceForm(request.POST, prefix=f'form_{i+1}', instance=good)
+            forms.append(form)
+        if all(form.is_valid() for form in forms):
+            for form in forms:
+                form.save()
+            sale_info = request.session.get('sale_info', {})
+            # Создаем объект sale и заполнем все его поля
+            sale = Sales.objects.create(
+                sale_number=sale_info.get('sale_number'),
+                created_by=request.user,
+                sale_date=datetime.strptime(sale_info.get('sale_date'), '%Y-%m-%d'),
+                quantity=quantity_name,
+                payment_type=Payment_type.objects.get(
+                    id=int(sale_info.get('payment_type'))),
+                client_type=Client_type.objects.get(
+                    id=int(sale_info.get('client_type'))),
+                receiving_type=Receiving_type.objects.get(
+                    id=int(sale_info.get('receiving_type'))),
+                client_name=sale_info.get('client_name'),
+                client_contact=sale_info.get('client_contact'),
+                regular_client=sale_info.get('regular_client')
+            )
+            comment = sale_info.get('comment') 
+            if comment != "None":
+                sale.comment = comment
+            if (sale.payment_type == Payment_type.objects.get(title='Наличные') or
+                sale.payment_type == Payment_type.objects.get(title='Перевод')):
+                sale.cash = False
+
+            product_summary = goods_list.values('product__product__id').annotate(
+                quantity=Count('id'),
+                average_price=Avg('sale_price'))
+
+            for product in product_summary:
+                sale_price_RUB = product['average_price']
+                quantity = product['quantity']
+                product = Catalog.objects.get(id=int(product['product__product__id']))
+                # Создаем объект sale_detail и заполнем все его поля  
+                sale_detail = SaleDetail.objects.create(
+                    sale_number=Sales.objects.get(id=sale.id),
+                    sale_date=Sales.objects.get(id=sale.id),
+                    created_by=request.user,
+                    product=product,
+                    quantity=quantity,
+                    sale_price_RUB=sale_price_RUB)
+                product_list.append(f'{product} - {quantity} ед.')
+                sale.product_list = ', '.join(
+                    str(item) for item in product_list)
+                sale.save()
+            total_price = SaleDetail.objects.filter(
+                sale_number=sale.id).aggregate(
+                total_price=Sum(
+                    F('quantity') * F('sale_price_RUB')))['total_price']
+            sale.total_price = total_price
+            sale.save()
+            update_goods(goods_list, sale)
+            return redirect('app:sales_list')
+    else:
+        for i, good in enumerate(goods_list):
+            form = SalePriceForm(prefix=f'form_{i+1}', instance=good)
+            forms.append((good, form))
+
+    context = {'forms': forms, 'busket': True}
+    return render(request, template, context)
+
+# Список товаров.
 @login_required
 def goods_list(request):
     template = 'app/goods_list.html'
-    form_product = FilterProductForm(request.POST or None)
-    goods_list = Goods.objects.select_related(
-        'order_number', 'order_date', 'received_date',
-        'product', 'product__product',
-        'ordering_price_RMB', 'cost_price_RUB', 'created_by').filter(
-        is_published=True).values(
-        'order_number__order_number', 'order_date__order_date',
-        'received_date__received_date', 'cost_price_RUB__cost_price_RUB',
-        'product__product__title', 'product__product', 'sale_date__sale_date',
-        'sale_price_RUB__sale_price_RUB', 'markup').order_by('order_number')
-    paginator = Paginator(goods_list, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    context = {'page_obj': page_obj, 'form_product': form_product}
-    if request.method == 'POST':
-        form_product = FilterProductForm(request.POST)
-        if form_product.is_valid():
-            product = form_product.cleaned_data['product']
-            goods_list_detail = goods_list.filter(product__product=product)
-            context['goods_list_detail'] = goods_list_detail
+    context = {}
+    if request.method == 'GET':
+        query = request.GET.get('q', '')
+        if query:
+            results = Catalog.objects.filter(title__icontains=query)
+            context = {'results': results, 'query': query}
+        return render(request, template, context)
     return render(request, template, context)
 
+# Переход к списку товаров при выборе товара на вкладке Товары (ВСЕ)
+@login_required
+def selected_good(request, pk):
+    in_stock = request.GET.get('in_stock')
+
+    template = 'app/goods_list.html'
+    goods_list = Goods.objects.select_related(
+        'order_number',
+        'product', 'sale_date').filter(
+        is_published=True, product__product__id=pk).values(
+        'order_number__order_number', 'order_number__order_date',
+        'received_date', 'cost_price_RUB__cost_price_RUB',
+        'product__product__title', 'sn_number', 'sale_date__sale_date',
+        'sale_price_RUB__sale_price_RUB', 'id', 'sold', 'product__product')
+    if in_stock == 'stock':
+        goods_list = goods_list.filter(sale_date__isnull=True, received_date__isnull=False)
+    if in_stock == 'wait':
+        goods_list = goods_list.filter(sale_date__isnull=True, received_date__isnull=True)    
+    context = {'goods_list': goods_list, 'selected': True, 'pk': pk}
+    return render(request, template, context)
+
+
+# Список бракованных товаров
+@login_required
+def defect_goods(request):
+    template = 'app/goods_problems.html'
+    goods_list = Goods.objects.select_related(
+        'order_number',
+        'product', 'sale_date').filter(
+        defect=True).values(
+        'order_number__order_number', 'order_number__order_date',
+        'received_date', 'cost_price_RUB__cost_price_RUB', 'product__product',
+        'product__product__title', 'sn_number', 'sale_date__sale_date',
+        'sale_price_RUB__sale_price_RUB', 'id', 'sold', 'defect', 'comment', 'days_in_stock')
+    context = {'goods_list': goods_list, 'defect': True}
+    return render(request, template, context)
+
+
+# Список проблемных товаров (долгоо не продаются)
+@login_required
+def problem_goods(request):
+    template = 'app/goods_problems.html'
+    in_stock = request.GET.get('in_stock')
+    goods_list = Goods.objects.filter(sale_date__isnull=True, received_date__isnull=False)
+    goods_list.update(
+        days_in_stock=Cast(
+            Round(
+                (Now() - F('received_date')) / (60 * 60 * 24 * 10**6), 
+                0 
+            ),
+            output_field=fields.IntegerField()
+        )
+    )
+    goods_list = goods_list.order_by('-days_in_stock').values(
+        'order_number__order_number', 'order_number__order_date',
+        'received_date', 'cost_price_RUB__cost_price_RUB', 'product__product',
+        'product__product__title', 'sn_number', 'sale_date__sale_date',
+        'product__product__price_RUB', 'id', 'defect', 'comment', 'days_in_stock')
+
+    # Рассчитаем количество проблемных товаров по 4 категориям:
+    over_365 = goods_list.filter(days_in_stock__gt=365)
+    between_180_and_365 = goods_list.filter(days_in_stock__gt=180, days_in_stock__lte=365)
+    between_60_and_180 = goods_list.filter(days_in_stock__gt=60, days_in_stock__lte=180)
+    under_60 = goods_list.filter(days_in_stock__lte=60)
+
+    all_stats = goods_list.aggregate(
+        count=Count('id'),
+        total_cost=Sum('cost_price_RUB__cost_price_RUB')
+    )
+    over_365_stats = over_365.aggregate(
+        count=Count('id'),
+        total_cost=Sum('cost_price_RUB__cost_price_RUB')
+    )
+    between_180_and_365_stats = between_180_and_365.aggregate(
+        count=Count('id'),
+        total_cost=Sum('cost_price_RUB__cost_price_RUB')
+    )
+    between_60_and_180_stats = between_60_and_180.aggregate(
+        count=Count('id'),
+        total_cost=Sum('cost_price_RUB__cost_price_RUB')
+    )
+    under_60_stats = under_60.aggregate(
+        count=Count('id'),
+        total_cost=Sum('cost_price_RUB__cost_price_RUB')
+    )
+    if all_stats['total_cost'] > 0:
+        over_365_percent = round((over_365_stats['total_cost'] / all_stats['total_cost'] * 100), 1)
+        between_180_and_365_percent = round((between_180_and_365_stats['total_cost'] / all_stats['total_cost'] * 100), 1)
+        between_60_and_180_percent = round((between_60_and_180_stats['total_cost'] / all_stats['total_cost'] * 100), 1)
+        under_60_percent = round((under_60_stats['total_cost'] / all_stats['total_cost'] * 100), 1)
+    result = {
+        'all': {
+            'count': all_stats['count'],
+            'total_cost': round(all_stats['total_cost'], 0) or 0
+        },
+        'over_365': {
+            'count': over_365_stats['count'],
+            'total_cost': round(over_365_stats['total_cost'], 0) or 0,
+            'percent': over_365_percent
+        },
+        'between_180_and_365': {
+            'count': between_180_and_365_stats['count'],
+            'total_cost': round(between_180_and_365_stats['total_cost'], 0) or 0,
+            'percent': between_180_and_365_percent
+        },
+        'between_60_and_180': {
+            'count': between_60_and_180_stats['count'],
+            'total_cost': round(between_60_and_180_stats['total_cost'], 0) or 0,
+            'percent': between_60_and_180_percent
+        },
+        'under_60': {
+            'count': under_60_stats['count'],
+            'total_cost': round(under_60_stats['total_cost'], 0) or 0,
+            'percent': under_60_percent
+        }
+    }
+    context = {'goods_list': goods_list, 'result': result}
+
+    # Добавляем 4 новых выборки при нажатии 4 кнопок: 365/180/60/0
+    if in_stock == '365':
+        detail = over_365.values('product__product__title', 'product__product__id').annotate(
+            product_count=Count('id'),
+            max_days_in_stock=Max('days_in_stock'),
+            total_cost=Sum('cost_price_RUB__cost_price_RUB')
+            ).order_by('-total_cost')
+        context['detail'] = detail
+    elif in_stock == '180':
+        detail = between_180_and_365.values('product__product__title', 'product__product__id').annotate(
+            product_count=Count('id'),
+            max_days_in_stock=Max('days_in_stock'),
+            total_cost=Sum('cost_price_RUB__cost_price_RUB')
+            ).order_by('-total_cost')
+        context['detail'] = detail
+    elif in_stock == '60':
+        detail = between_60_and_180.values('product__product__title', 'product__product__id').annotate(
+            product_count=Count('id'),
+            max_days_in_stock=Max('days_in_stock'),
+            total_cost=Sum('cost_price_RUB__cost_price_RUB')
+            ).order_by('-total_cost')
+        context['detail'] = detail
+    elif in_stock == '0':
+        detail = under_60.values('product__product__title', 'product__product__id').annotate(
+            product_count=Count('id'),
+            max_days_in_stock=Max('days_in_stock'),
+            total_cost=Sum('cost_price_RUB__cost_price_RUB')
+            ).order_by('-total_cost')
+        context['detail'] = detail
+    return render(request, template, context)
+
+# Редакировать товар (sn номер, брак, комментарий)
+@login_required
+def good_detail_edit(request, pk):
+    template = 'app/good_detail_edit.html'
+    instance = get_object_or_404(Goods, pk=pk)
+    form = EditGoodDetailForm(instance=instance)
+    context = {'form': form}
+    if request.method == 'POST':
+        form = EditGoodDetailForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            return redirect('app:selected_good', pk=instance.product.product.id)
+    return render(request, template, context)
 
 # Профили
 class UserDetailView(DetailView):
@@ -874,3 +1208,12 @@ def dashboard(request):
                 sale_date__month=month.month, sale_date__year=month.year).count()
             context['count_sales'] = count_sales
     return render(request, template, context)
+
+# Обработка api-запроса от сканера штрих-кодов
+class ScanAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        code = request.data.get('code')
+        if not code:
+            return Response({'error': 'No code provided'}, status=status.HTTP_400_BAD_REQUEST)
+        sn_number = ScanSnNumber.objects.create(sn_number=code)
+        return Response({'message': 'done', 'sn_number': sn_number.sn_number}, status=status.HTTP_200_OK)

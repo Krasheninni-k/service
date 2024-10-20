@@ -142,6 +142,9 @@ class OrderDetail(BaseModel):
         'Себестоимость в руб.', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
 
+    def __str__(self):
+        return str(self.product)
+
 
 class Sales(BaseModel):
     sale_number = models.IntegerField('Номер продажи',  default=0)
@@ -226,11 +229,7 @@ class Goods(BaseModel):
         on_delete=models.CASCADE,
         related_name='goods_order_date',
         null=True, blank=True)
-    received_date = models.ForeignKey(
-        Orders,
-        on_delete=models.CASCADE,
-        related_name='goods_received_date',
-        null=True, blank=True)
+    received_date = models.DateTimeField('Дата приемки', null=True, blank=True)
     product = models.ForeignKey(
         OrderDetail,
         on_delete=models.CASCADE,
@@ -291,6 +290,14 @@ class Goods(BaseModel):
         'Наценка, %', max_digits=10, decimal_places=2,
         null=True, blank=True, default=0)
     days_in_stock = models.IntegerField('Дней на складе', null=True, blank=True, default=0)
+    sn_number = models.TextField('S/n номер', blank=True)
+    received = models.BooleanField('Получен', blank=True, null=True)
+    sold = models.BooleanField('Продан', blank=True, null=True)
+    sale_price = models.DecimalField(
+        'Цена продажи', max_digits=10, decimal_places=2,
+        null=True, blank=True)
+    defect = models.BooleanField('Брак', blank=True, null=True)
+    comment = models.CharField('Комментарий', max_length=256, null=True, blank=True)
 
     class Meta:
         verbose_name = 'Товар'
@@ -298,7 +305,7 @@ class Goods(BaseModel):
         ordering = ('order_date', 'product')
 
     def __str__(self):
-        return self.product
+        return str(self.product)
 
 
 class CustomSettings(models.Model):
@@ -321,3 +328,13 @@ class CustomSettings(models.Model):
 
     def __str__(self):
         return self.exchange_rate
+
+class ScanSnNumber(models.Model):
+    sn_number = models.CharField('S/n номер', max_length=256)
+
+    class Meta:
+        verbose_name = 'S/n номер'
+        verbose_name_plural = 'S/n номера'
+
+    def __str__(self):
+        return self.sn_number

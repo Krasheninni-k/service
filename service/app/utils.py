@@ -25,7 +25,6 @@ def get_markup():
         default_markup_dict = {(0, float('inf')): 40,}
         return default_markup_obj, default_markup_dict
 
-
 # При создании заказа создает объеты Goods на каждый товар заказа.
 def create_goods(order, order_detail, quantity):
     for i in range(quantity):
@@ -36,26 +35,21 @@ def create_goods(order, order_detail, quantity):
             product=order_detail,
             price_RUB=order_detail.product,
             cost_price_RUB=order_detail,
-            ordering_price_RMB=order_detail,
-            received_date=order
+            ordering_price_RMB=order_detail
             )
         good.save()
 
-# При каждой продаже изменяет Goods: дату продажи, цену продажи, маржу, наценку, кол-во дней на складе.
-def update_goods(sale_detail, quantity):
-    for i in range(quantity):
-        order_list = OrderDetail.objects.filter(
-            product=sale_detail.product)
-        good = Goods.objects.filter(
-            sale_date__isnull=True,
-            received_date__received_date__isnull=False,
-            product__in=order_list).order_by(
-            'order_date').select_related('received_date').last()
-        good.sale_date = sale_detail.sale_date
-        good.sale_price_RUB = sale_detail
-        good.days_in_stock = (good.sale_date.sale_date.date() - good.received_date.received_date.date()).days
-        good.margin = (float(sale_detail.sale_price_RUB) - float(good.cost_price_RUB.cost_price_RUB))
-        good.markup = (float(sale_detail.sale_price_RUB)/float(good.cost_price_RUB.cost_price_RUB) - 1)*100
+# При каждой продаже изменяет Goods: цену продажи, маржу, наценку, кол-во дней на складе.
+def update_goods(goods_list, sale):
+    for good in goods_list:
+        good.sale_date = sale
+        good.payment_type = sale
+        good.client_type = sale
+        good.receiving_type = sale
+        good.sold = True
+        good.days_in_stock = (good.sale_date.sale_date.date() - good.received_date.date()).days
+        good.margin = (float(good.sale_price) - float(good.cost_price_RUB.cost_price_RUB))
+        good.markup = (float(good.sale_price)/float(good.cost_price_RUB.cost_price_RUB) - 1)*100
         good.save()
 
 # При каждой закупке изменяет Catalog: цену товара в юанях и расчетные цены от закупки и от текущего курса.
@@ -109,21 +103,22 @@ def change_order_days_in_stock(instance):
     for i in range(len(order_detail_list)):
         goods_list = Goods.objects.filter(
             order_number=instance,
-            sale_date__sale_date__isnull=False).select_related('received_date')
-        for j in range(len(goods_list)):
-            good = goods_list[j]
-            good.days_in_stock = (good.sale_date.sale_date.date() - good.received_date.received_date.date()).days
+            sale_date__sale_date__isnull=False)
+        for good in goods_list:
+            good.days_in_stock = (good.sale_date.sale_date.date() - good.received_date.date()).days
             good.save()
 
 # При редактировании даты покупки пересчитываем поле days_in_stock в каждом товаре покупки модели Goods.
 def change_sale_days_in_stock(instance):
-    sale_detail_list = SaleDetail.objects.filter(sale_date=instance)
-    for i in range(len(sale_detail_list)):
-        goods_list = Goods.objects.filter(
-            sale_date=instance).select_related('received_date')
-        for j in range(len(goods_list)):
-            good = goods_list[j]
-            good.days_in_stock = (good.sale_date.sale_date.date() - good.received_date.received_date.date()).days
+    if instance.payment_type.title in ['Наличные', 'Перевод']:
+        instance.cash = False
+    else:
+        instance.cash = True
+    instance.save()
+    goods_list = Goods.objects.filter(sale_date=instance)
+    for good in goods_list:
+        if good.received_date and good.sale_date.sale_date:
+            good.days_in_stock = (good.sale_date.sale_date.date() - good.received_date.date()).days
             good.save()
 
 # При редактировании деталей заказа меняет поле product_list в Orders, total_cost_RUB в OrderDetail.
@@ -140,7 +135,7 @@ def change_order_detail_fields(instance):
         order.save()
         goods_list = Goods.objects.filter(
             order_number=order,
-            sale_date__sale_date__isnull=False).select_related('received_date')
+            sale_date__sale_date__isnull=False)
         for j in range(len(goods_list)):
             good = goods_list[j]
             good.margin = (float(good.sale_price_RUB.sale_price_RUB) - float(good.cost_price_RUB.cost_price_RUB))
@@ -151,31 +146,6 @@ def change_order_detail_fields(instance):
          total_cost=Sum(F('quantity') * F('cost_price_RUB')))['total_cost']
     order.total_cost = total_cost
     order.save()
-
-# При редактировании продажи меняет поля product_list в Sales и total_price в SaleDetail.
-# и поля good.margin и good.markup в Goods.
-def change_sale_detail_fields(instance):
-    sale = get_object_or_404(Sales, pk=instance.sale_number.id)
-    sale_detail_list = SaleDetail.objects.filter(sale_number=sale.id)
-    product_list = []
-    for i in range(len(sale_detail_list)):
-        sale_detail = sale_detail_list[i]
-        product = Catalog.objects.get(id=sale_detail.product_id)
-        product_list.append(f'{product} - {sale_detail.quantity} ед.')
-        sale.product_list = ', '.join(str(item) for item in product_list)
-        sale.save()
-        goods_list = Goods.objects.filter(
-            sale_date=sale).select_related('received_date')
-        for j in range(len(goods_list)):
-            good = goods_list[j]
-            good.margin = (float(good.sale_price_RUB.sale_price_RUB) - float(good.cost_price_RUB.cost_price_RUB))
-            good.markup = (float(good.sale_price_RUB.sale_price_RUB)/float(good.cost_price_RUB.cost_price_RUB) - 1)*100
-            good.save()
-    total_price = SaleDetail.objects.filter(
-         sale_number=sale.id).aggregate(
-         total_price=Sum(F('quantity') * F('sale_price_RUB')))['total_price']
-    sale.total_price = total_price
-    sale.save()
 
 def product_list_for_import(sale, sale_detail):
     sale_detail_list = SaleDetail.objects.filter(

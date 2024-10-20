@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% block title %}
+    Корзина
+{% endblock %}
+{% block content %}
+  <div class="col d-flex justify-content-center">
+    <div class="card" style="width: 40rem;">
+      <div class="card-header d-flex justify-content-between">
+        <div>Выбранные товары</div>
+      <div>
+        {% if busket %}
+        <a class="btn btn-primary btn-sm me-2" href="{% url 'app:sale_detail_add' %}?add_more=True" role="button">Добавить еще</a>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <table class="table">
+              <thead>
+                  <tr>
+                      <th style="width: 400px;">Продукт</th>
+                      <th>Себест</th>
+                      <th>Каталог</th>
+                      <th style="width: 100px;">Продажа</th>
+                      <th>SN Number</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for good, form in forms %}
+                  <tr>
+                      <td>{{ good.product.product.title }}</td>
+                      <td>{{ good.cost_price_RUB.cost_price_RUB }}</td>
+                      <td>{{ good.product.product.price_RUB }}</td>
+                      <td>
+                        {{ form.sale_price }}
+                      </td>
+                      <td>{{ good.sn_number }}</td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+      </form>
+  </div>
+  
+    </div>
+  </div>
+{% endblock %}

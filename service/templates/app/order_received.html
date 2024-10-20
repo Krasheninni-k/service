@@ -1,43 +1,79 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
+{% load static %}
 {% block title %}
-  {% if '/edit/' in request.path %}
-    Редактирование закупки
-  {% elif "/delete/" in request.path %}
-    Удаление закупки
-  {% else %}
     Закупка получена
-  {% endif %}
 {% endblock %}
 {% block content %}
-  <div class="col d-flex justify-content-center">
-    <div class="card" style="width: 40rem;">
-      <div class="card-header">
-        {% if '/edit/' in request.path %}
-          Редактирование 
-        {% elif '/delete/' in request.path %}
-          Удаление 
-        {% else %}
-          Внесите информацию о получении закупки
+<div class="col d-flex justify-content-center">
+  <div class="card" style="width: 40rem;">
+    <div class="card-header d-flex justify-content-between">
+      <span class="text-left">
+        Закупка № {{ goods_info.first.order_number__order_number }} 
+        от {{ goods_info.first.order_number__order_date|date:"d E Y" }}
+        {% if approve %}
+          <br>Убедитесь, что данные товары получены.
+          <br>Отсканируете по очереди каждый товар.
         {% endif %}
-      </div>
-      <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-          {% if not '/delete/' in request.path %}
-            {% bootstrap_form form %}
-          {% else %}
-            <article>
-              {% if object.image %}
-                <a href="{{ object.image.url }}" target="_blank">
-                  <img class="border-3 rounded img-fluid img-thumbnail mb-2" src="{{ object.image.url }}">
-                </a>
-              {% endif %}
-            </article>
-          {% endif %}
-          {% bootstrap_button button_type="submit" content="Отправить" %}
-        </form>
-      </div>
+      </span>
+      <div class="d-flex justify-content-end align-items-end">
+        {% if begin %}
+          <a class="btn btn-primary btn-sm me-2" href="{% url 'app:order_accept_all' pk %}" role="button">Принять все</a>
+          <a class="btn btn-primary btn-sm" href="{% url 'app:order_begin_scan' pk %}" role="button">Начать сканирование</a>
+        {% elif approve %}
+          <a class="btn btn-primary btn-sm" href="{% url 'app:order_end_scan' pk %}" role="button">Сканирование завершено</a>
+        {% endif %}
+    </div>
+    
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 400px;">Продукт</th>
+            <th>Себест.</th>
+            <th> </th>
+            <th style="width: 150px;">Получен</th>
+            <th>S/n</th>
+          </tr>
+        </thead>
+        <tbody> 
+          {% for i in goods_info %}
+          <tr id="good-{{ i.id }}">
+            <script>
+              document.addEventListener("DOMContentLoaded", function() {
+                  var tr = document.getElementById("good-{{ i.id }}");
+                  if (tr) {
+                      tr.id = tr.id.replace(/\s+/g, ''); // Удаляем пробелы
+                  }
+              });
+          </script>
+              <td>{{ i.product__product__title}}</td>
+              <td>{{ i.cost_price_RUB__cost_price_RUB}}</td>
+              <td>
+                {% if i.received == None %}
+                  <a href="{% url 'app:order_change_received' i.id %}">
+                    <img src="{% static 'img/in_progress.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                  </a>
+                {% elif i.received == False %}
+                  <a href="{% url 'app:order_change_received' i.id %}">
+                    <img src="{% static 'img/none.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                  </a>
+                {% else %}
+                  <a href="{% url 'app:order_change_received' i.id %}">
+                    <img src="{% static 'img/done.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                  </a>
+                {% endif %}
+              <td>{% if  i.received_date %} {{ i.received_date|date:"d-m-Y" }} 
+                {% else %} 
+                  В пути
+                {% endif %}</td>
+              <td>{{ i.sn_number }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
+</div>
 {% endblock %}

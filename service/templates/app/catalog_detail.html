@@ -101,10 +101,10 @@
               <tbody> 
                 {% for i in page_obj %}
                   <tr>
-                    <td class="small-font">{{ i.received_date__received_date|date:"d-m-Y" }}</td>
+                    <td class="small-font">{{ i.received_date|date:"d-m-Y" }}</td>
                     <td class="small-font">{{ i.sale_date__sale_date|date:"d-m-Y" }}</td>
                     <td class="small-font">{{ i.cost_price_RUB__cost_price_RUB|floatformat:-2 }}</td>
-                    <td class="small-font">{{ i.sale_price_RUB__sale_price_RUB|floatformat:-2 }}</td>
+                    <td class="small-font">{{ i.sale_price|floatformat:-2 }}</td>
                     <td class="small-font">{{ i.days_in_stock }}</td>
                     <td class="small-font">{{ i.margin|floatformat:-2 }}</td>
                     <td class="small-font">{{ i.markup }}</td>

@@ -29,11 +29,10 @@
               <td>{{ order.quantity }}</td>
               <td>{{ order.product_list|truncatewords:30 }}</td>
               <td>{{ order.total_cost|floatformat:-2 }}</td>
-              <td>{% if  order.received_date %} {{ order.received_date|date:"d-m-Y" }} 
-                {% else %} 
-                <a class="btn btn-sm text-danger" href="{% url 'app:order_received' order.id %}" role="button">
-                  В пути
-                </a>
+              <td>{% if  order.received_date %} 
+                {{ order.received_date|date:"d-m-Y" }}
+                {% else %}
+                <a class="btn btn-sm me-2" href="{% url 'app:order_received' order.id %}" role="button" style="background-color: #228B22; color: white;">Принять</a>
                 {% endif %}</td>
               <td>{{ order.cost_price_RUB }}</td>
               <td>

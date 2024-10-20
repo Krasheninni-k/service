@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
+{% load static %}
 {% block title %}
   Список товаров
 {% endblock %}
@@ -7,74 +8,91 @@
 <div class="col d-flex justify-content-center">
   <div class="card" style="width: 60rem;">
     <div class="card-header d-flex justify-content-between">
-      <span>Список товаров:</span>
+      <span>Введите название, чтобы вывести список товаров:</span>
+      {% if not selected %}
+      <div class="d-flex ms-auto">
+        <a class="btn btn-primary btn-sm me-2" href="{% url 'app:defect_goods' %}" role="button">Брак</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'app:problem_goods' %}" role="button">Проблемные</a>
     </div>
+      {% endif %}
+      {% if selected %}
+      <div class="ms-auto">
+         <a class="btn btn-primary btn-sm me-2" href="{% url 'app:selected_good' pk %}?in_stock=wait" role="button">Ожидание</a>
+          <a class="btn btn-primary btn-sm me-2" href="{% url 'app:selected_good' pk %}?in_stock=stock" role="button">Наличие</a>
+          <a class="btn btn-primary btn-sm" href="{% url 'app:selected_good' pk %}" role="button">Все</a>
+      </div>
+      {% endif %}
+  </div>
+    <div class="form-outline">
+      <form method="get" action="{% url 'app:goods_list' %}">
+      <input type="search" id="form1" class="form-control" name='q' placeholder="Введите название товара" aria-label="Search" />
+      </form>
+      <script>
+        document.getElementById('form1').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
+        });
+      </script>
+    </div>
+    {% if query %}
+    <div class="card-body">
+      <table class="table">
+        <tbody> 
+          {% for result in results %}
+          <tr>
+            <td style="vertical-align: middle;">
+              <a class="btn" href="{% url 'app:selected_good' result.id %}"
+              style="display: inline-block; text-align: left;">{{ result.title }}</a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    
+    {% if selected or defect %}
     <div class="card-body">
       <table class="table">
         <thead>
           <tr>
-            <th>№</th>
-            <th style="width: 250px;">
-              <br><form method="post" enctype="multipart/form-data" id="myForm">
-                {% csrf_token %}
-                {% bootstrap_form form_product %}
-                <input type="submit" style="display: none;">
-              </form>
-              <script>
-                const form = document.getElementById('myForm');
-              
-                form.addEventListener('change', () => {
-                  form.submit();
-                });
-              </script> Товар</th>
-            <th style="width: 100px;">Оплачено</th>
-            <th style="width: 100px;">Получено</th>
-            <th style="width: 100px;">Продано</th>
+            <th style="width: 400px;">Продукт</th>
             <th>Себест.</th>
-            <th>Цена</th>
-            <th>Наценка, %</th>
+            <th style="width: 150px;">Получен</th>
+            <th> </th>
+            <th style="width: 150px;">Продан</th>
+            <th>S/n</th>
           </tr>
         </thead>
         <tbody> 
-          {% if goods_list_detail is not None %}
-          {% for i in goods_list_detail %}
-            <tr>
-              <td>{{ i.order_number__order_number }}</td>
-              <td style="vertical-align: middle;"><a class="btn" 
-                href="{% url 'app:catalog_detail' i.product__product %}"
-                style="display: inline-block; text-align: left;">
-                {{ i.product__product__title }}</a></td>
-              <td>{{ i.order_date__order_date|date:"d-m-Y" }}</td>
-              <td>{{ i.received_date__received_date|date:"d-m-Y" }}</td>
-              <td>{{ i.sale_date__sale_date|date:"d-m-Y" }}</td>
-              <td>{{ i.cost_price_RUB__cost_price_RUB|floatformat:-2 }}</td>
-              <td>{{ i.sale_price_RUB__sale_price_RUB|floatformat:-2 }}</td>
-              <td>{% if i.markup != 0 %}{{ i.markup }}{% endif %}</td>
-            </tr>
-          {% endfor %}
-          {% else%}
-          {% for i in page_obj %}
+        {% for good in goods_list %}
           <tr>
-            <td>{{ i.order_number__order_number }}</td>
-            <td style="vertical-align: middle;"><a class="btn"
-              href="{% url 'app:catalog_detail' i.product__product %}" 
-              style="display: inline-block; text-align: left;">
-              {{ i.product__product__title }}</a></td>
-            <td>{{ i.order_date__order_date|date:"d-m-Y" }}</td>
-            <td>{{ i.received_date__received_date|date:"d-m-Y" }}</td>
-            <td>{{ i.sale_date__sale_date|date:"d-m-Y" }}</td>
-            <td>{{ i.cost_price_RUB__cost_price_RUB|floatformat:-2 }}</td>
-            <td>{{ i.sale_price_RUB__sale_price_RUB|floatformat:-2 }}</td>
-            <td>{% if i.markup != 0 %}{{ i.markup }}{% endif %}</td>
+            <td style="vertical-align: middle;"><a class="btn" 
+              href="{% url 'app:catalog_detail' good.product__product %}" 
+              style="display: inline-block; text-align: left;">{{ good.product__product__title }}</a></td>
+            <td>{{ good.cost_price_RUB__cost_price_RUB }}</td>
+            <td>{{ good.received_date|date:"d-m-Y" }}</td>
+            <td>
+              {% if good.sold == None or good.sold == False %}
+                  <img src="{% static 'img/in_progress.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+              {% else %}
+                  <img src="{% static 'img/done.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+              {% endif %}
+            </td>
+            <td>{{ good.sale_date__sale_date|date:"d-m-Y" }}</td>
+            <td>{{ good.sn_number }}</td>
+            <td>
+              <a class="btn btn-sm text-muted" href="{% url 'app:good_detail_edit' good.id %}" role="button">
+                Править
+              </a>
+            </td>
           </tr>
         {% endfor %}
-        {% endif %}
-        </tbody>
-      </table>
+      </tbody>
+    </table>
     </div>
+    {% endif %}
   </div>
 </div>
-{% if goods_list_detail is None %}
-{% include "includes/paginator.html" %}
-{% endif %}
 {% endblock %}

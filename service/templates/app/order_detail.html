@@ -7,23 +7,29 @@
   <div class="card" style="width: 40rem;">
     <div class="card-header d-flex justify-content-between">
       <span class="text-left">
-        Закупка № {{ order_info.first.order_number_id__order_number }} 
-        от {{ order_info.first.order_date_id__order_date|date:"d E Y" }}:
-        <br>
-        {% if order_info.first.received_date_id__received_date %} 
-        Получена {{ order_info.first.received_date_id__received_date|date:"d E Y" }}
-        {% else %} Не Получена
-        {% endif %}
+          Закупка № {{ order_info.first.order_number_id__order_number }} 
+          от {{ order_info.first.order_date_id__order_date|date:"d E Y" }}:
+          <br>
+          {% if order_info.first.received_date_id__received_date %} 
+          Получена {{ order_info.first.received_date_id__received_date|date:"d E Y" }}
+          {% else %} Не Получена
+          {% endif %}
       </span>
-      <span>
-        <a class="btn btn-sm text-muted" 
-        href="{% url 'app:order_edit' order_info.first.order_number_id__id %}" 
-        role="button">Редактировать</a>
-        <a class="btn btn-sm text-muted"
-        href="{% url 'app:order_delete' order_info.first.order_number_id__id %}"
-        role="button">Удалить закупку</a>
+      <span class="d-flex flex-column align-items-end justify-content-between">
+          <div>
+              <a class="btn btn-sm text-muted" 
+              href="{% url 'app:order_edit' order_info.first.order_number_id__id %}" 
+              role="button">Редактировать</a>
+              <a class="btn btn-sm text-muted"
+              href="{% url 'app:order_delete' order_info.first.order_number_id__id %}"
+              role="button">Удалить закупку</a>
+          </div>
+          <a class="btn btn-sm text-muted"
+          href="{% url 'app:order_received' order_info.first.order_number_id__id %}"
+          role="button">Состав закупки</a>
       </span>
-    </div>
+  </div>
+  
     <div class="card-body">
       <table class="table">
         <thead>

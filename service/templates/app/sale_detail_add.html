@@ -1,24 +1,140 @@
 {% extends "base.html" %}
 {% load django_bootstrap5 %}
+{% load static %}
 {% block title %}
     Добавление продажи
 {% endblock %}
 {% block content %}
   <div class="col d-flex justify-content-center">
     <div class="card" style="width: 40rem;">
-      <div class="card-header">
-          Внесите информацию о новой продаже
+      <div class="card-header d-flex justify-content-between">
+        <div>
+          {% if begin %}
+              <div>Выберете товар вручную или отсканируйте штрих-коды</div>
+          {% elif approve %}
+              <div>Отсканируйте поочередно все товары</div>
+          {% elif finished %}
+              <div>Проверьте список товаров</div>
+          {% elif selected %}
+              <div>Выберете товары вручную</div>    
+          {% endif %}
       </div>
-      <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-          {% for form in forms %}
-          {% bootstrap_form form %}
-            <br>
-          {% endfor %}
-          {% bootstrap_button button_type="submit" content="Отправить" %}
+      <div>
+        {% if begin %}
+            <a class="btn btn-primary btn-sm" href="{% url 'app:sale_begin_scan' %}" role="button">Начать сканирование</a>
+        {% elif approve %}
+            <a class="btn btn-primary btn-sm" href="{% url 'app:sale_end_scan' %}" role="button">Сканирование завершено</a>
+        {% elif finished %}
+            <a class="btn btn-primary btn-sm" href="{% url 'app:sale_busket' %}" role="button">Подтвердить</a>
+        {% elif selected %}
+            <a class="btn btn-primary btn-sm" href="{% url 'app:sale_busket' %}" role="button">Подтвердить</a>
+        {% endif %}
+      </div>
+    </div>
+    
+      
+      {% if begin %}
+      <div class="form-outline">
+        <form method="get" action="{% url 'app:select_good' %}">
+        <input type="search" id="form1" class="form-control" name='q' placeholder="Введите название товара" aria-label="Search" />
         </form>
+        <script>
+          document.getElementById('form1').addEventListener('keyup', function(event) {
+              if (event.key === 'Enter') {
+                  event.preventDefault();
+              }
+          });
+        </script>
       </div>
+      {% endif %}
+
+      {% if query %}
+        {% for result in results %}
+            <tr>
+              <td style="vertical-align: middle;">
+                <a class="btn" href="{% url 'app:selected_good_stock' result.id %}"
+                style="display: inline-block; text-align: left;">{{ result.title }}</a>
+              </td>
+            </tr>
+        {% endfor %}
+      {% endif %}
+
+      {% if selected %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 400px;">Продукт</th>
+            <th>Себест.</th>
+            <th style="width: 150px;">Получен</th>
+            <th> </th>
+            <th style="width: 150px;">Продан</th>
+            <th>S/n</th>
+          </tr>
+        </thead>
+        <tbody> 
+        {% for good in goods_list %}
+          <tr>
+            <td>{{ good.product__product__title }}</td>
+            <td>{{ good.cost_price_RUB__cost_price_RUB }}</td>
+            <td>{{ good.received_date|date:"d-m-Y" }}</td>
+            <td>
+              {% if good.sold == None or good.sold == False %}
+                <a href="{% url 'app:sale_change_sold' good.id %}">
+                  <img src="{% static 'img/in_progress.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                </a>
+              {% else %}
+                <a href="{% url 'app:sale_change_sold' good.id %}">
+                  <img src="{% static 'img/done.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                </a>
+              {% endif %}
+            </td>
+            <td>{{ good.sale_date__sale_date|date:"d-m-Y" }}</td>
+            <td>{{ good.sn_number }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+      {% endif %}
+
+      {% if finished %}
+        <div class="card-body">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 400px;">Продукт</th>
+                <th>Себест.</th>
+                <th style="width: 150px;">Получен</th>
+                <th></th>
+                <th style="width: 150px;">Продан</th>
+                <th>S/n</th>
+              </tr>
+            </thead>
+            <tbody> 
+              {% for good in sale_info %}
+              <tr>
+                <td>{{ good.product__product__title }}</td>
+                <td>{{ good.cost_price_RUB__cost_price_RUB }}</td>
+                <td>{{ good.received_date|date:"d-m-Y" }}</td>
+                <td>
+                  {% if good.sold == None or good.sold == False %}
+                    <a href="{% url 'app:sale_change_sold' good.id %}">
+                      <img src="{% static 'img/in_progress.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                    </a>
+                  {% else %}
+                    <a href="{% url 'app:sale_change_sold' good.id %}">
+                      <img src="{% static 'img/done.png' %}" width="20" height="20" class="d-inline-block align-top" alt="">
+                    </a>
+                  {% endif %}
+                </td>
+                <td>{{ good.sale_date__sale_date|date:"d-m-Y" }}</td>
+                <td>{{ good.sn_number }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

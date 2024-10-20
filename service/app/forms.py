@@ -4,12 +4,13 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from django.forms import modelformset_factory
 
 from .models import (Orders, OrderDetail, Catalog, Sales, SaleDetail, Goods,
                       Client_type, Payment_type, Receiving_type, CustomSettings)
 from .utils import max_value, max_value_sale
 
-
+# Закупки
 class OrderForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
@@ -45,28 +46,6 @@ class OrderDetailForm(forms.ModelForm):
         widgets = {
             'cost_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
             'ordering_price_RMB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
-
-
-class ReceivedForm(forms.ModelForm):
-
-    def __init__(self, *args, **kwargs):
-        super(ReceivedForm, self).__init__(*args, **kwargs)
-        initial = date.today().strftime("%d.%m.%Y")
-        self.fields['received_date'].initial = initial
-        self.fields['received_date'].help_text = f'Сегодня - { initial }'
-
-    def clean_received_date(self):
-        received_date = self.cleaned_data.get('received_date')
-        current_date = timezone.now().date()
-        if received_date.date() > current_date:
-            raise ValidationError("Нельзя указывать дату в будущем.")
-        return received_date
-
-    class Meta:
-        model = Orders
-        fields = ('received_date',)
-        widgets = {
-            'received_date': forms.DateInput(attrs={'format': '%d.%m.%Y'})}
 
 
 class EditDeleteOrderForm(forms.ModelForm):
@@ -117,7 +96,7 @@ class CatalogForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'cols': '40', 'rows': '3'})}
 
-
+# Продажи
 class SaleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
@@ -144,19 +123,25 @@ class SaleForm(forms.ModelForm):
 
     class Meta:
         model = Sales
-        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'cash')
+        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'cash', 'quantity')
         widgets = {
             'comment': forms.Textarea(attrs={'cols': '40', 'rows': '3'})}
 
-
-class SaleDetailForm(forms.ModelForm):
+# Форма для внесения цены единицы товара
+class SalePriceForm(forms.ModelForm):
 
     class Meta:
-        model = SaleDetail
-        fields = ('product', 'quantity', 'sale_price_RUB')
+        model = Goods
+        fields = ('sale_price',)
         widgets = {
-            'sale_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
+            'sale_price': forms.TextInput(attrs={'class': 'form-control', 'style': 'width: 100px;'}),
+        }
 
+    # def __init__(self, *args, **kwargs):
+        # good = kwargs.get('instance', None)
+        # super(SalePriceForm, self).__init__(*args, **kwargs)
+        # if good and getattr(good, 'product', None) and getattr(good.product, 'product', None):
+        #    self.fields['sale_price'].initial = getattr(good.product.product, 'price_RUB', 0)
 
 class SaleEditDeleteForm(forms.ModelForm):
 
@@ -213,6 +198,15 @@ class StartEndDateForm(forms.Form):
         widget=forms.DateInput(attrs={'type':'date', 'class': 'form-control'})
         )
 
+# Форма для редактирования товара
+class EditGoodDetailForm(forms.ModelForm):
+
+    class Meta:
+        model = Goods
+        fields = ('sn_number', 'defect', 'comment')
+        widgets = {
+            'sn_number': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
+            'comment': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
 
 # Форма для выбора отчетного месяца.
 class MonthForm(forms.Form):
