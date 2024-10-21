@@ -166,7 +166,7 @@ def get_month_goods_list(start_date, end_date):
     month_goods_list = Goods.objects.filter(
         sale_date__sale_date__gte=start_date, sale_date__sale_date__lte=end_date).aggregate(
         count_goods=Count('id'),
-        sum_sale=Sum('sale_price_RUB__sale_price_RUB'),
+        sum_sale=Sum('sale_price'),
         sum_margin=Sum('margin')
         )
     return(month_goods_list)

@@ -683,7 +683,7 @@ def selected_good_stock(request, pk):
         'order_number__order_number', 'order_number__order_date',
         'received_date', 'cost_price_RUB__cost_price_RUB',
         'product__product__title', 'sn_number', 'sale_date__sale_date',
-        'sale_price_RUB__sale_price_RUB', 'id', 'sold')
+        'id', 'sold')
     context = {'goods_list': goods_list, 'selected': True}
     return render(request, template, context)
 
@@ -803,7 +803,7 @@ def selected_good(request, pk):
         'order_number__order_number', 'order_number__order_date',
         'received_date', 'cost_price_RUB__cost_price_RUB',
         'product__product__title', 'sn_number', 'sale_date__sale_date',
-        'sale_price_RUB__sale_price_RUB', 'id', 'sold', 'product__product')
+        'id', 'sold', 'product__product')
     if in_stock == 'stock':
         goods_list = goods_list.filter(sale_date__isnull=True, received_date__isnull=False)
     if in_stock == 'wait':
@@ -823,7 +823,7 @@ def defect_goods(request):
         'order_number__order_number', 'order_number__order_date',
         'received_date', 'cost_price_RUB__cost_price_RUB', 'product__product',
         'product__product__title', 'sn_number', 'sale_date__sale_date',
-        'sale_price_RUB__sale_price_RUB', 'id', 'sold', 'defect', 'comment', 'days_in_stock')
+        'id', 'sold', 'defect', 'comment', 'days_in_stock')
     context = {'goods_list': goods_list, 'defect': True}
     return render(request, template, context)
 

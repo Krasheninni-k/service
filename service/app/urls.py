@@ -100,5 +100,6 @@ urlpatterns = [
 
      # API для сканирования s/n номеров
      # curl -X POST http://127.0.0.1:8000/app/scan/ -H "Content-Type: application/json" -d '{"code": 111}'
+     # curl -X POST http://djirobots.pythonanywhere.com/app/scan/ -H "Content-Type: application/json" -d '{"code": 111}'
      path('scan/', views.ScanAPIView.as_view(), name='scan')
 ]
