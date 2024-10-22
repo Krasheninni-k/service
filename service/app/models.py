@@ -16,7 +16,7 @@ class BaseModel(models.Model):
 
 
 class Catalog(BaseModel):
-    title = models.CharField('Название', max_length=256)
+    title = models.CharField('Название', max_length=256, unique=True)
     description = models.TextField('Описание', blank=True)
     price_RUB = models.DecimalField(
         'Цена по прайсу, руб.', max_digits=10, decimal_places=2,

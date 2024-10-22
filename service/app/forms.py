@@ -203,7 +203,7 @@ class EditGoodDetailForm(forms.ModelForm):
 
     class Meta:
         model = Goods
-        fields = ('sn_number', 'defect', 'comment')
+        fields = ('sn_number', 'defect', 'comment', 'received_date', 'received')
         widgets = {
             'sn_number': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
             'comment': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
