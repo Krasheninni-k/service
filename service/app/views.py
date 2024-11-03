@@ -5,7 +5,7 @@ from django.db.models import Count
 from django.views.generic import DetailView, UpdateView
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponseRedirect
 from datetime import datetime
 from django.db.models import F, Sum, Q, Count, Avg, fields, Max
@@ -146,7 +146,7 @@ def order_detail(request, pk):
     context = {'order_info': order_info}
     return render(request, template, context)
 
-
+@user_passes_test(lambda u: u.is_staff)
 @login_required
 def order_delete(request, pk):
     template = 'app/order_edit_delete.html'
