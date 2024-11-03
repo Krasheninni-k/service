@@ -23,7 +23,7 @@ from app.models import (Orders, Goods, Catalog, OrderDetail, Sales, SaleDetail, 
 from app.forms import (OrderForm, OrderDetailForm, SaleForm,
                         EditDeleteOrderForm, EditOrderDetailForm,
                         CatalogForm, SaleEditDeleteForm, EditGoodDetailForm,
-                        CustomSettingsForm,
+                        CustomSettingsForm, OrderReceivedDateForm,
                         StartEndDateForm, MonthForm, SalePriceForm)
 
 from app.utils import (create_goods, update_goods, update_catalog, update_exchange_rate,
@@ -214,6 +214,16 @@ def order_change_received(request, pk):
     url = reverse('app:order_received', args=[good.order_number.id])
     return redirect(f"{url}#good-{good.id}")
 
+# Кнопка для сброса даты приемки товара в блоке Приемки товара
+@login_required
+def order_reset_received_date(request, pk):
+    order = get_object_or_404(Orders, pk=pk)
+    goods_list = Goods.objects.filter(order_number=order)
+    for good in goods_list:
+        good.received_date = None
+        good.save()
+    return redirect(reverse('app:order_received', args=[good.order_number.id]))
+
 # Кнопка для приемки всех товаров заказа "Принять все"
 @login_required
 def order_accept_all(request, pk):
@@ -222,6 +232,19 @@ def order_accept_all(request, pk):
     new_status = True if has_unreceived_goods else False
     Goods.objects.filter(order_number=order).update(received=new_status)
     return redirect('app:order_received', pk=order.id)
+
+# Ввод даты приемки товара (по-умолчанию сегодня)
+@login_required
+def order_received_date(request, pk):
+    template = 'app/order_received_date.html'
+    order = get_object_or_404(Orders, id=pk)
+    form = OrderReceivedDateForm(request.POST or None)
+    context = {'form': form, 'order': order}
+    if form.is_valid():
+        received_date = form.cleaned_data['received_date'].date()
+        request.session['order_info'] = {'received_date': str(received_date)}
+        return redirect(reverse('app:order_begin_scan', kwargs={'pk': pk}))
+    return render(request, template, context)
 
 # Кнопка начать сканирование для внесения заказа
 @login_required
@@ -239,20 +262,26 @@ def order_begin_scan(request, pk):
 
 @login_required
 def order_end_scan(request, pk):
-    current_date = datetime.now()
+    order_info = request.session.get('order_info', {})
+    if 'received_date' not in order_info:
+        return render(request, template, {'error': 'Дата получения не найдена в сессии.'})
+    received_date = datetime.strptime(order_info['received_date'], '%Y-%m-%d').date()
+    print(received_date)
     template = 'app/order_received.html'
     sn_numbers = ScanSnNumber.objects.all()
     unreceived_goods = Goods.objects.filter(
             order_number__id=pk, received=True, received_date__isnull=True)
+    
     for scan, good in zip(sn_numbers, unreceived_goods):
+        print(scan, good)
         good.sn_number = scan.sn_number
-        good.received_date = current_date
+        good.received_date = received_date
         good.save()
     ScanSnNumber.objects.all().delete()
     has_unreceived_goods = Goods.objects.filter(order_number__id=pk, received_date__isnull=True).exists()
     if not has_unreceived_goods:
         order = get_object_or_404(Orders, pk=pk)
-        order.received_date = current_date
+        order.received_date = received_date
         order.save()
     goods_info = Goods.objects.select_related(
         'order_number', 'product__product', 'cost_price_RUB').filter(

@@ -11,15 +11,19 @@
       <span class="text-left">
         Закупка № {{ goods_info.first.order_number__order_number }} 
         от {{ goods_info.first.order_number__order_date|date:"d E Y" }}
-        {% if approve %}
+        {% if begin %}
+        <br>Выберете все или некоторые товры
+        {% elif approve %}
           <br>Убедитесь, что данные товары получены.
           <br>Отсканируете по очереди каждый товар.
         {% endif %}
       </span>
       <div class="d-flex justify-content-end align-items-end">
         {% if begin %}
-          <a class="btn btn-primary btn-sm me-2" href="{% url 'app:order_accept_all' pk %}" role="button">Принять все</a>
-          <a class="btn btn-primary btn-sm" href="{% url 'app:order_begin_scan' pk %}" role="button">Начать сканирование</a>
+          <a class="btn btn-primary btn-sm me-2" style="background-color: red; color: white;"
+          href="{% url 'app:order_reset_received_date' pk %}" role="button">Сбросить даты</a>
+          <a class="btn btn-primary btn-sm me-2" href="{% url 'app:order_accept_all' pk %}" role="button">Отметить все</a>
+          <a class="btn btn-primary btn-sm" href="{% url 'app:order_received_date' pk %}" role="button">Принять</a>
         {% elif approve %}
           <a class="btn btn-primary btn-sm" href="{% url 'app:order_end_scan' pk %}" role="button">Сканирование завершено</a>
         {% endif %}

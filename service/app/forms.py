@@ -4,7 +4,6 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from django.forms import modelformset_factory
 
 from .models import (Orders, OrderDetail, Catalog, Sales, SaleDetail, Goods,
                       Client_type, Payment_type, Receiving_type, CustomSettings)
@@ -85,6 +84,27 @@ class EditOrderDetailForm(forms.ModelForm):
             'cost_price_RUB': forms.Textarea(attrs={'cols': '40', 'rows': '1'}),
             'ordering_price_RMB': forms.Textarea(attrs={'cols': '40', 'rows': '1'})}
 
+class OrderReceivedDateForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(OrderReceivedDateForm, self).__init__(*args, **kwargs)
+        initial = date.today().strftime("%d.%m.%Y")
+        self.fields['received_date'].initial = initial
+        self.fields['received_date'].help_text = f'Сегодня - { initial }'
+
+    def clean(self):
+        super().clean()
+
+    def clean_received_date(self):
+        received_date = self.cleaned_data.get('received_date')
+        current_date = timezone.now().date()
+        if received_date.date() > current_date:
+            raise ValidationError("Нельзя указывать дату в будущем.")
+        return received_date
+
+    class Meta:
+        model = Goods
+        fields = ('received_date',)
 
 # Каталог
 class CatalogForm(forms.ModelForm):

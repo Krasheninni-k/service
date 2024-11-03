@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% block title %}
+    Закупка получена
+{% endblock %}
+{% block content %}
+<div class="col d-flex justify-content-center">
+  <div class="card" style="width: 40rem;">
+    <div class="card-header d-flex justify-content-between">
+      <span class="text-left">
+        Закупка № {{ order.order_number }} 
+        от {{ order.order_date|date:"d E Y" }}
+          <br>Укажите дату получения закупки
+      </span>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+          {% bootstrap_form form %}
+        {% bootstrap_button button_type="submit" content="Начать сканирование" %}
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
