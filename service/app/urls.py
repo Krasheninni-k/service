@@ -35,7 +35,7 @@ urlpatterns = [
            name='order_begin_scan'),
      path('orders/<int:pk>/end_scan', views.order_end_scan,
            name='order_end_scan'),
-           
+
      # Товары, Остатки
      path('goods/', views.goods_list,
           name='goods_list'),
@@ -49,6 +49,10 @@ urlpatterns = [
           name='defect_goods'),
      path('goods/problem', views.problem_goods,
           name='problem_goods'),
+     path('goods/<int:pk>/begin_scan', views.goods_begin_scan,
+           name='goods_begin_scan'),
+     path('goods/<int:pk>/end_scan', views.goods_end_scan,
+           name='goods_end_scan'),
 
      # Каталог
      path('goods/catalog/', views.catalog,

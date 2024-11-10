@@ -982,6 +982,34 @@ def good_detail_edit(request, pk):
             return redirect('app:selected_good', pk=instance.product.product.id)
     return render(request, template, context)
 
+# Кнопка начать сканирование для товаров в наличии
+@login_required
+def goods_begin_scan(request, pk):
+    template = 'app/goods_scan.html'
+    ScanSnNumber.objects.all().delete()
+    goods_in_stock = Goods.objects.filter(
+        Q(product__product__id=pk) & Q(received_date__isnull=False) &
+        Q(sale_date__isnull=True) & (Q(sn_number__isnull=True) | ~Q(sn_number__regex=r'\d'))).values(
+            'product__product__title', 'cost_price_RUB__cost_price_RUB',
+            'order_number__order_number', 'received_date', 'sn_number')
+    context = {'goods_info':  goods_in_stock, 'pk': pk}
+    return render(request, template, context)
+
+@login_required
+def goods_end_scan(request, pk):
+    sn_numbers = ScanSnNumber.objects.all()
+    goods_in_stock = Goods.objects.filter(
+        Q(product__product__id=pk) & Q(received_date__isnull=False) &
+        Q(sale_date__isnull=True) & (Q(sn_number__isnull=True) | ~Q(sn_number__regex=r'\d')))
+    for scan, good in zip(sn_numbers, goods_in_stock):
+        print(scan, good)
+        good.sn_number = scan.sn_number
+        good.save()
+    ScanSnNumber.objects.all().delete()
+    url = reverse('app:selected_good', kwargs={'pk': pk})
+    return redirect(f"{url}?in_stock=stock")
+
+
 # Профили
 class UserDetailView(DetailView):
     model = get_user_model()

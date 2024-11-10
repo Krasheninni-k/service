@@ -17,9 +17,10 @@
       {% endif %}
       {% if selected %}
       <div class="ms-auto">
-         <a class="btn btn-primary btn-sm me-2" href="{% url 'app:selected_good' pk %}?in_stock=wait" role="button">Ожидание</a>
-          <a class="btn btn-primary btn-sm me-2" href="{% url 'app:selected_good' pk %}?in_stock=stock" role="button">Наличие</a>
-          <a class="btn btn-primary btn-sm" href="{% url 'app:selected_good' pk %}" role="button">Все</a>
+        <a class="btn btn-primary btn-sm me-2" href="{% url 'app:goods_begin_scan' pk %}" role="button">Отсканировать</a>
+        <a class="btn btn-primary btn-sm me-2" href="{% url 'app:selected_good' pk %}?in_stock=wait" role="button">Ожидание</a>
+        <a class="btn btn-primary btn-sm me-2" href="{% url 'app:selected_good' pk %}?in_stock=stock" role="button">Наличие</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'app:selected_good' pk %}" role="button">Все</a>
       </div>
       {% endif %}
   </div>

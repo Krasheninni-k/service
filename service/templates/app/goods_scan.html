@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% block title %}
+    Сканирование товаров
+{% endblock %}
+{% block content %}
+<div class="col d-flex justify-content-center">
+  <div class="card" style="width: 40rem;">
+    <div class="card-header d-flex justify-content-between">
+      <span class="text-left">
+        Отсканируете по очереди каждый товар.
+      </span>
+      <div class="d-flex justify-content-end align-items-end">
+        <a class="btn btn-primary btn-sm" href="{% url 'app:goods_end_scan' pk %}" role="button">Сканирование завершено</a>
+      </div>
+    
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 400px;">Продукт</th>
+            <th>Себест.</th>
+            <th>Номер закупки</th>
+            <th style="width: 150px;">Получен</th>
+            <th>S/n</th>
+          </tr>
+        </thead>
+        <tbody> 
+          {% for i in goods_info %}
+          <tr>
+              <td>{{ i.product__product__title}}</td>
+              <td>{{ i.cost_price_RUB__cost_price_RUB}}</td>
+              <td>{{ i.order_number__order_number}}</td>
+              <td>{% if  i.received_date %} {{ i.received_date|date:"d-m-Y" }} 
+                {% else %} 
+                  В пути
+                {% endif %}</td>
+              <td>{{ i.sn_number }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
