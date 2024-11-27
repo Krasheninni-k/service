@@ -57,7 +57,7 @@
         </div>
 
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-5">
             <h5 class="card-title">Список закупок</h5>
             <table class="table">
               <thead>
@@ -65,26 +65,27 @@
                   <th class="small-font">№</th>
                   <th class="small-font", style="width: 80px;">Оплачен</th>
                   <th class="small-font", style="width: 80px;">Получен</th>
-                  <th class="small-font">Кол-во</th>
                   <th class="small-font">Цена в юанях</th>
                   <th class="small-font">Себест.</th>
                 </tr>
               </thead>
               <tbody> 
-                {% for i in order_list %}
+                {% for i in order_page_obj %}
                   <tr>
                     <td class="small-font">{{ i.order_number__order_number }}</td>
-                    <td class="small-font">{{ i.order_date__order_date|date:"d-m-Y" }}</td>
-                    <td class="small-font">{{ i.received_date__received_date|date:"d-m-Y" }}</td>
-                    <td class="small-font">{{ i.quantity }}</td>
-                    <td class="small-font">{{ i.ordering_price_RMB|floatformat:-2 }}</td>
-                    <td class="small-font">{{ i.cost_price_RUB|floatformat:-2 }}</td>
+                    <td class="small-font">{{ i.order_number__order_date|date:"d-m-Y" }}</td>
+                    <td class="small-font">{{ i.received_date|date:"d-m-Y" }}</td>
+                    <td class="small-font">{{ i.product__ordering_price_RMB|floatformat:-2 }}</td>
+                    <td class="small-font">{{ i.product__cost_price_RUB|floatformat:-2 }}</td>
                   </tr>
                 {% endfor %}
               </tbody>
             </table>
+            <div class="small-font">
+              {% include "includes/paginator_order.html" %}
+            </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-7">
             <h5 class="card-title">Список продаж</h5>
             <table class="table">
               <thead>
@@ -99,7 +100,7 @@
                 </tr>
               </thead>
               <tbody> 
-                {% for i in page_obj %}
+                {% for i in sale_page_obj %}
                   <tr>
                     <td class="small-font">{{ i.received_date|date:"d-m-Y" }}</td>
                     <td class="small-font">{{ i.sale_date__sale_date|date:"d-m-Y" }}</td>
@@ -113,7 +114,7 @@
               </tbody>
             </table>
             <div class="small-font">
-              {% include "includes/paginator.html" %}
+              {% include "includes/paginator_sale.html" %}
             </div>
           </div>
         </div>

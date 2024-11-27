@@ -354,11 +354,14 @@ def catalog_detail(request, pk):
             product__product=pk).values('id').count()
     product_count_wait = Goods.objects.filter(
         Q(received_date__isnull=True), product__product=pk).values('id').count()
-    order_list = OrderDetail.objects.filter(
-        product=pk).values('order_number__order_number',
-                           'order_date__order_date',
-                           'received_date__received_date',
-                           'quantity', 'cost_price_RUB', 'ordering_price_RMB').order_by('order_number')[:20]
+    order_list = Goods.objects.select_related('product', 'order_number').filter(
+       product__product=pk).values('order_number__order_number',
+                           'order_number__order_date',
+                           'received_date','product__cost_price_RUB',
+                           'product__ordering_price_RMB').order_by('order_number')
+    order_paginator = Paginator(order_list, 10)
+    order_page_number = request.GET.get('order_page')
+    order_page_obj = order_paginator.get_page(order_page_number)
     sale_list = Goods.objects.filter(
         product__product=pk, sale_date__sale_date__isnull=False).values(
         'margin',
@@ -368,10 +371,10 @@ def catalog_detail(request, pk):
         'sale_price',
         'cost_price_RUB__cost_price_RUB',
         'sale_date__sale_date').order_by('sale_date')
-    paginator = Paginator(sale_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    context = {'product': product, 'page_obj': page_obj, 'order_list': order_list,
+    sale_paginator = Paginator(sale_list, 10)
+    sale_page_number = request.GET.get('sale_page')
+    sale_page_obj = sale_paginator.get_page(sale_page_number)
+    context = {'product': product, 'sale_page_obj': sale_page_obj, 'order_page_obj': order_page_obj,
                'product_count_stock': product_count_stock,
                'product_count_wait': product_count_wait,
                'exchange_rate': exchange_rate}

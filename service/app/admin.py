@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (Orders, Catalog, Payment_type,
-                     Receiving_type, Client_type, Goods, Sales)
+                     Receiving_type, Client_type, Goods, Sales, OrderDetail, SaleDetail)
 
 
 class SalesAdmin(admin.ModelAdmin):
@@ -18,3 +18,5 @@ admin.site.register(Client_type)
 admin.site.register(Goods)
 admin.site.register(Orders)
 admin.site.register(Sales, SalesAdmin)
+admin.site.register(OrderDetail)
+admin.site.register(SaleDetail)
