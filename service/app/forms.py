@@ -152,9 +152,10 @@ class SalePriceForm(forms.ModelForm):
 
     class Meta:
         model = Goods
-        fields = ('sale_price',)
+        fields = ('sale_price', 'sn_number')
         widgets = {
             'sale_price': forms.TextInput(attrs={'class': 'form-control', 'style': 'width: 100px;'}),
+            'sn_number': forms.TextInput(attrs={'class': 'form-control', 'style': 'width: 100px;'}),
         }
 
     # def __init__(self, *args, **kwargs):
@@ -177,7 +178,7 @@ class SaleEditDeleteForm(forms.ModelForm):
 
     class Meta:
         model = Sales
-        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'quantity', 'comment')
+        exclude = ('created_at', 'created_by', 'product_list', 'is_published', 'total_price', 'quantity')
         widgets = {
             'sale_date': forms.DateInput(attrs={'format': '%d.%m.%Y'})}
 
