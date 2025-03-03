@@ -37,6 +37,10 @@ class OrderForm(forms.ModelForm):
 
 
 class OrderDetailForm(forms.ModelForm):
+    product = forms.ModelChoiceField(
+        queryset=Catalog.objects.all().order_by('title'),  # Сортировка по алфавиту
+        empty_label="Выберите продукт"
+    )
 
     class Meta:
         model = OrderDetail

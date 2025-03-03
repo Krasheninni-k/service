@@ -134,12 +134,13 @@ def change_order_detail_fields(instance):
         order.product_list = ', '.join(str(item) for item in product_list)
         order.save()
         goods_list = Goods.objects.filter(
-            order_number=order,
+            product=order_detail,
             sale_date__sale_date__isnull=False)
+        print(goods_list)
         for j in range(len(goods_list)):
             good = goods_list[j]
-            good.margin = (float(good.sale_price_RUB.sale_price_RUB) - float(good.cost_price_RUB.cost_price_RUB))
-            good.markup = (float(good.sale_price_RUB.sale_price_RUB)/float(good.cost_price_RUB.cost_price_RUB) - 1)*100
+            good.margin = (float(good.sale_price) - float(good.cost_price_RUB.cost_price_RUB))
+            good.markup = (float(good.sale_price)/float(good.cost_price_RUB.cost_price_RUB) - 1)*100
             good.save()
     total_cost = OrderDetail.objects.filter(
          order_number=order.id).aggregate(
